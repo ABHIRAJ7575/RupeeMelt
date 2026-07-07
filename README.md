@@ -3,8 +3,6 @@
 > A personal finance dashboard that watches your money with unblinking precision and zero emotional involvement.  
 > The name is accurate.
 
-**[→ Live App](https://rupeemelt.web.app/)**
-
 ---
 
 ## What Is This
