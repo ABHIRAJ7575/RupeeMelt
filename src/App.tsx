@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Box, Container, Typography, Button, IconButton, ThemeProvider, createTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Container, Typography, Button, ThemeProvider, createTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -9,7 +10,6 @@ import { MetallicCard } from './components/ui/MetallicCard';
 import Odometer from './components/ui/Odometer';
 import { ParticleEngine } from './components/ui/ParticleEngine';
 import { FinancialEngine } from './components/ledger/FinancialEngine';
-import { FloatingCalculator } from './components/tools/FloatingCalculator';
 import { generateLedgerReport } from './lib/pdfGenerator';
 import { supabase } from './lib/supabase';
 import type { LedgerTransaction } from './lib/supabase';
@@ -41,6 +41,12 @@ const darkTheme = createTheme({
   },
   typography: {
     fontFamily: "'Inter', sans-serif",
+    h1: { fontFamily: "'Space Grotesk', sans-serif" },
+    h2: { fontFamily: "'Space Grotesk', sans-serif" },
+    h3: { fontFamily: "'Space Grotesk', sans-serif" },
+    h4: { fontFamily: "'Space Grotesk', sans-serif" },
+    h5: { fontFamily: "'Space Grotesk', sans-serif" },
+    h6: { fontFamily: "'Space Grotesk', sans-serif" },
   },
   components: {
     MuiButton: {
@@ -88,6 +94,65 @@ export default function App() {
     } catch (e) { console.error("Audio not supported"); }
   };
 
+  const playShatterSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Noise buffer for the initial shatter impact
+      const bufferSize = ctx.sampleRate * 0.2; // 200ms
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'highpass';
+      noiseFilter.frequency.value = 1000;
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(1.5, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noise.start();
+
+      // Bass thud
+      const bassOsc = ctx.createOscillator();
+      const bassGain = ctx.createGain();
+      bassOsc.type = 'sine';
+      bassOsc.frequency.setValueAtTime(150, ctx.currentTime);
+      bassOsc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
+      bassGain.gain.setValueAtTime(1.0, ctx.currentTime);
+      bassGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      bassOsc.connect(bassGain);
+      bassGain.connect(ctx.destination);
+      bassOsc.start();
+      bassOsc.stop(ctx.currentTime + 0.3);
+
+      // Descending oscillators for ceramic pieces falling
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800 + i * 200, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100 + i * 50, ctx.currentTime + 0.3 + i * 0.1);
+        
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3 + i * 0.1);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3 + i * 0.1);
+      }
+    } catch (e) { console.error("Audio not supported"); }
+  };
+
   const fetchLedger = async () => {
     const { data, error } = await supabase.from('user_ledger').select('*');
     if (error) {
@@ -119,6 +184,19 @@ export default function App() {
     fetchLedger();
   }, []);
 
+  const expensesByCategory = transactions
+    .filter(t => t.transaction_direction === 'outflow')
+    .reduce((acc, curr) => {
+      acc[curr.category] = (acc[curr.category] || 0) + curr.amount_paisa / 100;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const chartData = Object.keys(expensesByCategory).map(key => ({
+    name: key,
+    value: expensesByCategory[key]
+  }));
+  const PIE_COLORS = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
+
   const handleRecordTransaction = async (amountPaisa: number, type: 'inflow' | 'outflow', paymentMethod: 'online' | 'offline', category: string, desc: string) => {
     const { error } = await supabase.from('user_ledger').insert({
       amount_paisa: amountPaisa,
@@ -137,6 +215,8 @@ export default function App() {
 
     if (type === 'inflow') {
       playCoinSound();
+    } else if (type === 'outflow') {
+      playShatterSound();
     }
     
     setTransactionAnim(type === 'inflow' ? 'deposit' : 'withdraw');
@@ -187,37 +267,50 @@ export default function App() {
               ₹
             </Typography>
             <Box>
-              <Typography variant="h3" sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 'var(--font-size-h3)', color: 'rgba(255, 255, 255, 0.95)' }}>
+              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#F8FAFC' }}>
                 RupeeMelt
               </Typography>
-              <Typography variant="body1" sx={{ fontSize: 'var(--font-size-base)', color: '#94A3B8' }}>
+              <Typography variant="subtitle1" sx={{ color: '#94A3B8', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                 Precision Mathematical Ledger
               </Typography>
             </Box>
           </Box>
           
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <IconButton onClick={() => setIsIncognito(!isIncognito)} color="secondary" sx={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(255,255,255,0.1)' }}>
-              {isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
-            </IconButton>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              startIcon={<PictureAsPdfIcon />}
-              onClick={handleExport}
-              sx={{ px: 3 }}
-            >
-              Export
-            </Button>
-            <Button 
-              variant="outlined" 
-              color="error" 
-              startIcon={<DeleteForeverIcon />}
-              onClick={() => setResetStage(1)}
-              sx={{ px: 3, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-            >
-              Reset Ledger
-            </Button>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+            <Typography sx={{
+              position: 'absolute',
+              top: 16,
+              right: 24,
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '1.5px',
+              background: 'linear-gradient(90deg, #ff4500, #ffd700, #ff4500)',
+              backgroundSize: '200% auto',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              color: 'transparent',
+              animation: 'firePulse 3s linear infinite',
+              zIndex: 100
+            }}>
+              Only for personal use of Abhiraj Dixit
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Button 
+                variant="contained" 
+                color="secondary"
+                startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                onClick={() => setIsIncognito(!isIncognito)}
+              >
+                {isIncognito ? 'Reveal' : 'Incognito'}
+              </Button>
+              <Button variant="outlined" color="primary" startIcon={<PictureAsPdfIcon />} onClick={handleExport}>
+                Export PDF
+              </Button>
+              <Button variant="outlined" color="error" startIcon={<DeleteForeverIcon />} onClick={() => setResetStage(1)}>
+                Reset Ledger
+              </Button>
+            </Box>
           </Box>
         </Box>
 
@@ -288,6 +381,43 @@ export default function App() {
           </MetallicCard>
         </Box>
 
+        {/* Tableau-Grade Visual Analytics */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 3 }}>
+          <MetallicCard sx={{ p: 4, height: 400, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>Expenses Breakdown</Typography>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {chartData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
+                    formatter={(value: any) => `₹${value}`}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <Typography variant="subtitle1" color="text.secondary">No expenses recorded yet.</Typography>
+              </Box>
+            )}
+          </MetallicCard>
+        </Box>
+
         {/* Central Transaction Console */}
         <Box className="dashboard-grid">
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 3cqi, 3rem)' }}>
@@ -296,9 +426,6 @@ export default function App() {
         </Box>
       </Container>
       
-      {/* Floating Global Utilities */}
-      <FloatingCalculator />
-
       {/* Reset Ledger Modals */}
       <Dialog 
         open={resetStage === 1} 

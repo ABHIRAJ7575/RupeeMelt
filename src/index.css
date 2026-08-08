@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Space+Grotesk:wght@700&display=swap');
 
 :root {
   /* Extreme Fluid Typography Matrix (Smartwatch to 4K) */
@@ -32,10 +32,10 @@ body {
   /* Root layout engine */
   container-type: inline-size;
   container-name: root-container;
-  /* Deep Midnight Blue to Rich Royal Indigo energetic gradient */
-  background: linear-gradient(-45deg, #0B1120, #1E1B4B, #0F172A, #312E81);
-  background-size: 400% 400%;
-  animation: gradientAnimation 15s ease infinite;
+  /* Deep Radial Gradient Blob Phase 2 */
+  background: radial-gradient(circle at top right, #1e1b4b, #020617);
+  background-size: cover;
+  background-attachment: fixed;
   overflow-x: hidden;
 }
 
@@ -89,4 +89,17 @@ body {
   25% { transform: scale(1.1) translateY(-10px); opacity: 1; }
   50% { transform: scale(1) translateY(0); opacity: 1; }
   100% { transform: scale(1) translateY(-20px); opacity: 0; }
+}
+
+@keyframes firePulse {
+  to { background-position: 200% center; }
+}
+
+/* Global V2.0 Transitions */
+.MuiButton-root, .MuiInputBase-root, .MuiSelect-select, .MuiMenuItem-root, .metallic-panel, input {
+  transition: all 0.3s ease !important;
+}
+
+.MuiButton-root:hover, .MuiInputBase-root:hover, .MuiSelect-select:hover {
+  transform: translateY(-2px);
 }

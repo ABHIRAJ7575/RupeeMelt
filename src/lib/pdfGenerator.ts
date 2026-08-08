@@ -4,6 +4,14 @@ import type { LedgerTransaction } from './supabase';
 
 
 export const generateLedgerReport = (roomName: string, transactions: LedgerTransaction[]) => {
+  const formatDate = (dateString: string | Date | number) => {
+    const d = new Date(dateString);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const doc = new jsPDF();
   
   // Header
@@ -14,11 +22,11 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   doc.setFontSize(12);
   doc.setTextColor(90, 108, 125);
   doc.text(`Room: ${roomName}`, 14, 30);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 36);
+  doc.text(`Generated: ${formatDate(new Date())}`, 14, 36);
 
   // Table Data
   const tableData = transactions.map(item => [
-    new Date(item.created_at).toLocaleDateString(),
+    formatDate(item.created_at),
     item.description || 'N/A',
     item.transaction_direction,
     item.category,
@@ -40,6 +48,57 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
     },
     alternateRowStyles: {
       fillColor: [244, 247, 246] // #F4F7F6 Ultra-light mint-ceramic white
+    }
+  });
+
+  // --- Financial Summary Engine ---
+  let totalCashbacks = 0;
+  let totalOnlineExpenses = 0;
+  let totalOfflineExpenses = 0;
+  let grandTotalExpenses = 0;
+  let totalInflow = 0;
+  const expensesByCategory: Record<string, number> = {};
+
+  transactions.forEach(t => {
+    const amount = t.amount_paisa / 100;
+    if (t.transaction_direction === 'inflow') {
+      totalInflow += amount;
+      if (t.category === 'Cashback') totalCashbacks += amount;
+    } else if (t.transaction_direction === 'outflow') {
+      grandTotalExpenses += amount;
+      if (t.payment_method === 'online') totalOnlineExpenses += amount;
+      if (t.payment_method === 'offline') totalOfflineExpenses += amount;
+      expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + amount;
+    }
+  });
+
+  const grandTotalMoneyLeft = totalInflow - grandTotalExpenses;
+
+  const summaryData = [
+    ['Total Cashbacks Received', `₹${totalCashbacks.toFixed(2)}`],
+    ...Object.keys(expensesByCategory).map(cat => [`Expense Category: ${cat}`, `₹${expensesByCategory[cat].toFixed(2)}`]),
+    ['Total Online Expenses', `₹${totalOnlineExpenses.toFixed(2)}`],
+    ['Total Cash (Offline) Expenses', `₹${totalOfflineExpenses.toFixed(2)}`],
+    ['Grand Total Expenses', `₹${grandTotalExpenses.toFixed(2)}`],
+    ['Grand Total Money Left', `₹${grandTotalMoneyLeft.toFixed(2)}`]
+  ];
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 15,
+    head: [['Financial Summary Metrics', 'Amount']],
+    body: summaryData,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [44, 62, 80],
+      textColor: [255, 255, 255]
+    },
+    styles: {
+      font: 'helvetica',
+      fontSize: 11,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
     }
   });
 

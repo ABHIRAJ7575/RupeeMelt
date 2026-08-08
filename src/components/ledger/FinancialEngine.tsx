@@ -12,14 +12,18 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [amountStr, setAmountStr] = useState('');
   const [description, setDescription] = useState('');
+  const [remarks, setRemarks] = useState('');
   const [transactionType, setTransactionType] = useState<'inflow' | 'outflow'>('outflow');
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'offline'>('online');
-  const [category, setCategory] = useState('Food');
+  const [category, setCategory] = useState('Others');
 
-  const categories = ['Salary', 'Food', 'Travel', 'Entertainment', 'Utilities', 'Shopping', 'Other'];
+  const depositCategories = ["Salary", "Cashback", "Others"];
+  const withdrawCategories = ["Activa H Smart", "Eco-Sport", "Outing", "Fast-Food", "Home Expenses", "MBA", "SIP", "To Mummy", "To Papa", "Paying Loan", "Others"];
+  const currentCategories = transactionType === 'inflow' ? depositCategories : withdrawCategories;
 
   const handleModeSelect = (mode: 'inflow' | 'outflow') => {
     setTransactionType(mode);
+    setCategory(mode === 'inflow' ? 'Salary' : 'Home Expenses');
     setFormStep(2);
   };
 
@@ -27,14 +31,16 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
     setFormStep(1);
     setAmountStr('');
     setDescription('');
-    setCategory('Food');
+    setRemarks('');
+    setCategory('Others');
   };
 
   const handleSubmit = async () => {
     const amount = parseFloat(amountStr);
     if (!isNaN(amount) && amount > 0) {
       const paisa = Math.round(amount * 100);
-      await onRecordTransaction(paisa, transactionType, paymentMethod, category, description);
+      const finalDescription = remarks ? `${description} | Remarks: ${remarks}` : description;
+      await onRecordTransaction(paisa, transactionType, paymentMethod, category, finalDescription);
       resetForm();
     }
   };
@@ -111,7 +117,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             exclusive
             onChange={(_, val) => val && setPaymentMethod(val)}
             fullWidth
-            sx={{ 
+            sx={{
               borderRadius: 2,
               '& .MuiToggleButton-root.Mui-selected': {
                 color: transactionType === 'inflow' ? '#10B981' : '#F43F5E',
@@ -119,8 +125,8 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
               }
             }}
           >
-            <ToggleButton value="online" sx={{ fontWeight: 600 }}>💳 Online</ToggleButton>
-            <ToggleButton value="offline" sx={{ fontWeight: 600 }}>💵 Offline (Cash)</ToggleButton>
+            <ToggleButton value="online" sx={{ fontWeight: 600 }}> Online</ToggleButton>
+            <ToggleButton value="offline" sx={{ fontWeight: 600 }}> Offline (Cash)</ToggleButton>
           </ToggleButtonGroup>
 
           <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
@@ -157,7 +163,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                   '&::before, &::after': { display: 'none' }
                 }}
               >
-                {categories.map((c) => (
+                {currentCategories.map((c) => (
                   <MenuItem key={c} value={c}>{c}</MenuItem>
                 ))}
               </Select>
@@ -179,16 +185,31 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             }}
           />
 
-          <Button 
-            variant="contained" 
-            size="large" 
+          <TextField
+            fullWidth
+            label="Remarks (Optional)"
+            variant="filled"
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            sx={{
+              '& .MuiFilledInput-root': {
+                borderRadius: '12px',
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                '&::before, &::after': { display: 'none' }
+              }
+            }}
+          />
+
+          <Button
+            variant="contained"
+            size="large"
             onClick={handleSubmit}
             disabled={!amountStr}
-            sx={{ 
-              borderRadius: 8, 
-              mt: 1, 
-              py: 1.5, 
-              fontWeight: 700, 
+            sx={{
+              borderRadius: 8,
+              mt: 1,
+              py: 1.5,
+              fontWeight: 700,
               fontSize: '1.1rem',
               background: 'linear-gradient(to right, #3B82F6, #6366F1)',
               color: '#fff',

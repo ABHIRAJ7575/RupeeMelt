@@ -5,10 +5,10 @@ import type { CardProps } from '@mui/material/Card';
 const StyledCard = styled(Card)(({ theme }) => ({
   background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))',
   boxShadow: '0 24px 48px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2)',
-  border: '1px solid rgba(255, 255, 255, 0.05)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
   borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-  backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)', // Safari support
+  backdropFilter: 'blur(40px)',
+  WebkitBackdropFilter: 'blur(40px)', // Safari support
   borderRadius: theme.shape.borderRadius,
   position: 'relative',
   overflow: 'hidden',
