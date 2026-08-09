@@ -5,6 +5,10 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import PaymentsIcon from '@mui/icons-material/Payments';
 
 import { MetallicCard } from './components/ui/MetallicCard';
 import Odometer from './components/ui/Odometer';
@@ -14,25 +18,24 @@ import { generateLedgerReport } from './lib/pdfGenerator';
 import { supabase } from './lib/supabase';
 import type { LedgerTransaction } from './lib/supabase';
 
-// Happy Dark Theme Palette Overrides
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#FBBF24', // Glowing Gold
+      main: '#FBBF24',
     },
     secondary: {
-      main: '#38BDF8', // Light Blue accent
+      main: '#38BDF8',
     },
     success: {
-      main: '#10B981', // Neon Emerald
+      main: '#10B981', // Electric Emerald
     },
     error: {
-      main: '#F43F5E', // Vibrant Rose
+      main: '#F43F5E', // Crimson Rose
     },
     background: {
-      default: '#0B1120',
-      paper: '#0F172A',
+      default: '#0B0E14',
+      paper: '#141923',
     },
     text: {
       primary: '#F8FAFC',
@@ -40,13 +43,13 @@ const darkTheme = createTheme({
     }
   },
   typography: {
-    fontFamily: "'Inter', sans-serif",
-    h1: { fontFamily: "'Space Grotesk', sans-serif" },
-    h2: { fontFamily: "'Space Grotesk', sans-serif" },
-    h3: { fontFamily: "'Space Grotesk', sans-serif" },
-    h4: { fontFamily: "'Space Grotesk', sans-serif" },
-    h5: { fontFamily: "'Space Grotesk', sans-serif" },
-    h6: { fontFamily: "'Space Grotesk', sans-serif" },
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    h1: { fontFamily: "'Plus Jakarta Sans', sans-serif" },
+    h2: { fontFamily: "'Plus Jakarta Sans', sans-serif" },
+    h3: { fontFamily: "'Plus Jakarta Sans', sans-serif" },
+    h4: { fontFamily: "'Plus Jakarta Sans', sans-serif" },
+    h5: { fontFamily: "'Plus Jakarta Sans', sans-serif" },
+    h6: { fontFamily: "'Plus Jakarta Sans', sans-serif" },
   },
   components: {
     MuiButton: {
@@ -74,7 +77,11 @@ export default function App() {
 
   // Reset Ledger Protocol States
   const [resetStage, setResetStage] = useState<0 | 1 | 2>(0);
-  const [transactionAnim, setTransactionAnim] = useState<'deposit' | 'withdraw' | null>(null);
+  const [vfxMode, setVfxMode] = useState<null | 'deposit' | 'withdraw'>(null);
+
+  // PDF Preview State
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfSaveFn, setPdfSaveFn] = useState<(() => void) | null>(null);
 
   const playCoinSound = () => {
     try {
@@ -86,71 +93,64 @@ export default function App() {
       osc.frequency.setValueAtTime(1200, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(2400, ctx.currentTime + 0.1);
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.9); // Extended decay
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.4);
+      osc.stop(ctx.currentTime + 1.9);
     } catch (e) { console.error("Audio not supported"); }
   };
 
-  const playShatterSound = () => {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Noise buffer for the initial shatter impact
-      const bufferSize = ctx.sampleRate * 0.2; // 200ms
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'highpass';
-      noiseFilter.frequency.value = 1000;
-      
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(1.5, ctx.currentTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      
-      noise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      noise.start();
+  const playTudumSound = () => {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const t = audioCtx.currentTime;
 
-      // Bass thud
-      const bassOsc = ctx.createOscillator();
-      const bassGain = ctx.createGain();
-      bassOsc.type = 'sine';
-      bassOsc.frequency.setValueAtTime(150, ctx.currentTime);
-      bassOsc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
-      bassGain.gain.setValueAtTime(1.0, ctx.currentTime);
-      bassGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-      bassOsc.connect(bassGain);
-      bassGain.connect(ctx.destination);
-      bassOsc.start();
-      bassOsc.stop(ctx.currentTime + 0.3);
+    // STRIKE 1: The "Tu" (Quick low-end bass punch)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(60, t);
+    osc1.frequency.exponentialRampToValueAtTime(30, t + 0.1);
+    
+    gain1.gain.setValueAtTime(0, t);
+    gain1.gain.linearRampToValueAtTime(1.5, t + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+    
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(t);
+    osc1.stop(t + 0.15);
 
-      // Descending oscillators for ceramic pieces falling
-      for (let i = 0; i < 3; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(800 + i * 200, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100 + i * 50, ctx.currentTime + 0.3 + i * 0.1);
-        
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3 + i * 0.1);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3 + i * 0.1);
-      }
-    } catch (e) { console.error("Audio not supported"); }
+    // STRIKE 2: The "Dum" (Massive cinematic synth chord)
+    // Deep C major/sus chord frequencies
+    const frequencies = [32.7, 65.4, 130.8, 196.0, 261.6, 329.6]; 
+    
+    frequencies.forEach((freq) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      
+      // Warm cinematic lowpass filter sweep
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(100, t + 0.15);
+      filter.frequency.exponentialRampToValueAtTime(3000, t + 0.2);
+      filter.frequency.exponentialRampToValueAtTime(100, t + 4.0);
+
+      // ADSR Envelope for the massive tail
+      gain.gain.setValueAtTime(0, t + 0.15);
+      gain.gain.linearRampToValueAtTime(0.4, t + 0.2); 
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 4.0); 
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(t + 0.15);
+      osc.stop(t + 4.0);
+    });
   };
 
   const fetchLedger = async () => {
@@ -187,7 +187,9 @@ export default function App() {
   const expensesByCategory = transactions
     .filter(t => t.transaction_direction === 'outflow')
     .reduce((acc, curr) => {
-      acc[curr.category] = (acc[curr.category] || 0) + curr.amount_paisa / 100;
+      let normalizedCategory = curr.category.trim();
+      if (normalizedCategory === 'Other') normalizedCategory = 'Others';
+      acc[normalizedCategory] = (acc[normalizedCategory] || 0) + curr.amount_paisa / 100;
       return acc;
     }, {} as Record<string, number>);
 
@@ -216,19 +218,21 @@ export default function App() {
     if (type === 'inflow') {
       playCoinSound();
     } else if (type === 'outflow') {
-      playShatterSound();
+      playTudumSound();
     }
     
-    setTransactionAnim(type === 'inflow' ? 'deposit' : 'withdraw');
+    setVfxMode(type === 'inflow' ? 'deposit' : 'withdraw');
     setTimeout(() => {
-      setTransactionAnim(null);
-    }, 2000);
+      setVfxMode(null);
+    }, 3500);
 
     console.log(`Recorded to Supabase: ${type} of ₹${amountPaisa/100} via ${paymentMethod} for [${category}] - ${desc}`);
   };
 
   const handleExport = () => {
-    generateLedgerReport('My_Personal_Ledger', transactions);
+    const { blobUrl, save } = generateLedgerReport('My_Personal_Ledger', transactions);
+    setPdfPreviewUrl(blobUrl);
+    setPdfSaveFn(() => save);
   };
 
   const executeSarcasticReset = async () => {
@@ -254,7 +258,7 @@ export default function App() {
             <Typography 
               component="span"
               sx={{ 
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
                 fontSize: 'clamp(2.5rem, 6cqi, 4rem)',
                 fontWeight: 800,
                 background: 'linear-gradient(135deg, #FBBF24 0%, #F97316 100%)',
@@ -267,7 +271,7 @@ export default function App() {
               ₹
             </Typography>
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#F8FAFC' }}>
+              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
                 RupeeMelt
               </Typography>
               <Typography variant="subtitle1" sx={{ color: '#94A3B8', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -282,15 +286,14 @@ export default function App() {
               top: 16,
               right: 24,
               fontWeight: 800,
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
               textTransform: 'uppercase',
-              letterSpacing: '1.5px',
-              background: 'linear-gradient(90deg, #ff4500, #ffd700, #ff4500)',
-              backgroundSize: '200% auto',
+              letterSpacing: '1px',
+              background: 'linear-gradient(135deg, #F6D365 0%, #FDA085 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
               color: 'transparent',
-              animation: 'firePulse 3s linear infinite',
               zIndex: 100
             }}>
               Only for personal use of Abhiraj Dixit
@@ -322,59 +325,119 @@ export default function App() {
             flexDirection: 'column', 
             gap: 1, 
             height: '100%',
-            boxShadow: 'inset 0 0 40px rgba(251, 191, 36, 0.1), 0 24px 48px rgba(0, 0, 0, 0.4)',
-            borderTop: '1px solid rgba(251, 191, 36, 0.4)' 
+            background: '#141923',
+            border: '1px solid #1E2638',
+            borderRadius: '16px',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
+              transform: 'translateY(-4px)'
+            }
           }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontSize: 'var(--font-size-base)' }}>
-              Total Net Balance
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                Total Net Balance
+              </Typography>
+              <AccountBalanceWalletIcon sx={{ color: '#94A3B8' }} />
+            </Box>
             <Typography 
               variant="h2" 
-              color="primary.main" 
               className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 'var(--font-size-h2)' }}
+              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', wordBreak: 'break-all', lineHeight: 1.1, color: '#F8FAFC' }}
             >
               <Odometer amount={totalNetBalancePaisa} />
             </Typography>
           </MetallicCard>
 
-          <MetallicCard sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 1, height: '100%' }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontSize: 'var(--font-size-base)' }}>
-              Total Inflows
-            </Typography>
+          <MetallicCard sx={{ 
+            p: 4, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 1, 
+            height: '100%',
+            background: '#141923',
+            border: '1px solid #1E2638',
+            borderRadius: '16px',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              borderColor: 'rgba(16, 185, 129, 0.5)',
+              boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.15)',
+              transform: 'translateY(-4px)'
+            }
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                Total Inflows
+              </Typography>
+              <TrendingUpIcon sx={{ color: '#10B981' }} />
+            </Box>
             <Typography 
               variant="h2" 
-              color="success.main" 
               className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 'var(--font-size-h2)' }}
+              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', wordBreak: 'break-all', lineHeight: 1.1, color: '#10B981' }}
             >
               <Odometer amount={totalInflowPaisa} />
             </Typography>
           </MetallicCard>
 
-          <MetallicCard sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 1, height: '100%' }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontSize: 'var(--font-size-base)' }}>
-              Total Expenses
-            </Typography>
+          <MetallicCard sx={{ 
+            p: 4, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 1, 
+            height: '100%',
+            background: '#141923',
+            border: '1px solid #1E2638',
+            borderRadius: '16px',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              borderColor: 'rgba(244, 63, 94, 0.5)',
+              boxShadow: '0 10px 20px -5px rgba(244, 63, 94, 0.15)',
+              transform: 'translateY(-4px)'
+            }
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                Total Expenses
+              </Typography>
+              <TrendingDownIcon sx={{ color: '#F43F5E' }} />
+            </Box>
             <Typography 
               variant="h2" 
-              color="error.main" 
               className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 'var(--font-size-h2)' }}
+              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', wordBreak: 'break-all', lineHeight: 1.1, color: '#F43F5E' }}
             >
               <Odometer amount={totalExpensesPaisa} />
             </Typography>
           </MetallicCard>
 
-          <MetallicCard sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 1, height: '100%' }}>
-            <Typography variant="h6" color="text.secondary" sx={{ fontSize: 'var(--font-size-base)' }}>
-              Cash on Hand (Offline)
-            </Typography>
+          <MetallicCard sx={{ 
+            p: 4, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 1, 
+            height: '100%',
+            background: '#141923',
+            border: '1px solid #1E2638',
+            borderRadius: '16px',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
+              transform: 'translateY(-4px)'
+            }
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                Cash on Hand (Offline)
+              </Typography>
+              <PaymentsIcon sx={{ color: '#94A3B8' }} />
+            </Box>
             <Typography 
               variant="h2" 
-              color="secondary.main" 
               className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 'var(--font-size-h2)' }}
+              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', wordBreak: 'break-all', lineHeight: 1.1, color: '#F8FAFC' }}
             >
               <Odometer amount={cashOnHandPaisa} />
             </Typography>
@@ -383,35 +446,53 @@ export default function App() {
 
         {/* Tableau-Grade Visual Analytics */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 3 }}>
-          <MetallicCard sx={{ p: 4, height: 400, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>Expenses Breakdown</Typography>
+          <MetallicCard sx={{ 
+            p: 4, 
+            height: 400, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 2,
+            background: '#141923',
+            border: '1px solid #1E2638',
+            borderRadius: '16px',
+          }}>
+            <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              Expenses Breakdown
+            </Typography>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={110}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((_entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                    itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
-                    formatter={(value: any) => `₹${value}`}
-                  />
-                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <Box sx={{ 
+                flex: 1, 
+                position: 'relative',
+                background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)',
+                borderRadius: '8px'
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={110}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {chartData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#141923', border: '1px solid #1E2638', borderRadius: '8px' }}
+                      itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
+                      formatter={(value: any) => ['₹' + Number(value).toLocaleString('en-IN'), 'Amount']}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
             ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)', borderRadius: '8px' }}>
                 <Typography variant="subtitle1" color="text.secondary">No expenses recorded yet.</Typography>
               </Box>
             )}
@@ -430,7 +511,7 @@ export default function App() {
       <Dialog 
         open={resetStage === 1} 
         onClose={() => setResetStage(0)}
-        sx={{ '& .MuiDialog-paper': { background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(20px)', border: '1px solid #F43F5E' } }}
+        sx={{ '& .MuiDialog-paper': { background: '#141923', border: '1px solid #1E2638' } }}
       >
         <DialogTitle sx={{ color: '#F43F5E', fontWeight: 700 }}>Critical Warning</DialogTitle>
         <DialogContent>
@@ -445,7 +526,7 @@ export default function App() {
       <Dialog 
         open={resetStage === 2} 
         onClose={() => setResetStage(0)}
-        sx={{ '& .MuiDialog-paper': { background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(20px)', border: '1px solid #F43F5E' } }}
+        sx={{ '& .MuiDialog-paper': { background: '#141923', border: '1px solid #1E2638' } }}
       >
         <DialogTitle sx={{ color: '#F43F5E', fontWeight: 700 }}>Final Sarcastic Warning</DialogTitle>
         <DialogContent>
@@ -457,40 +538,90 @@ export default function App() {
         </DialogActions>
       </Dialog>
 
-      {transactionAnim && (
+      {vfxMode === 'deposit' && (
         <Box sx={{
           position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          zIndex: 9999,
-          backdropFilter: 'blur(6px)',
+          inset: 0,
           pointerEvents: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Box sx={{
-            width: 160, height: 160,
-            borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            animation: 'coinPop 2s ease-out forwards',
-            background: transactionAnim === 'deposit' 
-              ? 'linear-gradient(135deg, #FBBF24, #D97706)' 
-              : 'linear-gradient(135deg, #475569, #1E293B)',
-            boxShadow: transactionAnim === 'deposit'
-              ? '0 0 40px rgba(251, 191, 36, 0.6)'
-              : '0 0 40px rgba(71, 85, 105, 0.6)'
-          }}>
-            <Typography sx={{ 
-              fontSize: '5rem', 
-              fontWeight: 800, 
-              color: transactionAnim === 'deposit' ? '#10B981' : '#F43F5E',
-              filter: `drop-shadow(0 0 10px ${transactionAnim === 'deposit' ? '#10B981' : '#F43F5E'})`
-            }}>
-              ₹
-            </Typography>
-          </Box>
-        </Box>
+          zIndex: 9999,
+          willChange: 'opacity, filter',
+          transform: 'translateZ(0)',
+          WebkitBackfaceVisibility: 'hidden',
+          background: 'radial-gradient(circle at center, transparent 40%, rgba(16, 185, 129, 0.05) 80%, rgba(16, 185, 129, 0.15) 100%)',
+          boxShadow: 'inset 0 0 120px 20px rgba(16, 185, 129, 0.5), inset 0 0 40px 5px rgba(16, 185, 129, 0.8)',
+          animation: 'pulse3D 3.5s ease-out forwards',
+        }} />
       )}
+
+      {vfxMode === 'withdraw' && (
+        <Box sx={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 9999,
+          willChange: 'opacity, filter',
+          transform: 'translateZ(0)',
+          WebkitBackfaceVisibility: 'hidden',
+          background: 'radial-gradient(circle at center, transparent 40%, rgba(244, 63, 94, 0.05) 80%, rgba(244, 63, 94, 0.15) 100%)',
+          boxShadow: 'inset 0 0 120px 20px rgba(244, 63, 94, 0.6), inset 0 0 40px 5px rgba(244, 63, 94, 0.9)',
+          animation: 'flash3D 3.5s ease-out forwards',
+        }} />
+      )}
+
+      {/* In-App PDF Preview Modal */}
+      <Dialog 
+        open={!!pdfPreviewUrl} 
+        onClose={() => { setPdfPreviewUrl(null); setPdfSaveFn(null); }}
+        maxWidth="md"
+        fullWidth
+        sx={{ 
+          zIndex: 1000,
+          '& .MuiDialog-paper': { 
+            background: 'rgba(20, 25, 35, 0.95)', 
+            backdropFilter: 'blur(16px)',
+            border: '1px solid #1E2638',
+            borderRadius: '16px',
+            overflow: 'hidden'
+          } 
+        }}
+      >
+        <DialogTitle sx={{ color: '#F8FAFC', fontWeight: 700, borderBottom: '1px solid #1E2638' }}>
+          Ledger Report Preview
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, height: '500px' }}>
+          {pdfPreviewUrl && (
+            <iframe 
+              src={pdfPreviewUrl} 
+              width="100%" 
+              height="100%" 
+              style={{ border: 'none' }}
+              title="PDF Preview"
+            />
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, borderTop: '1px solid #1E2638', display: 'flex', gap: 2, justifyContent: 'center' }}>
+          <Button 
+            onClick={() => { setPdfPreviewUrl(null); setPdfSaveFn(null); }} 
+            variant="outlined" 
+            color="secondary"
+            sx={{ flex: 1, py: 1.5, fontSize: '1.1rem', borderColor: 'rgba(248, 250, 252, 0.2)', color: '#F8FAFC', '&:hover': { borderColor: '#F8FAFC', background: 'rgba(248,250,252,0.05)' } }}
+          >
+            Close Preview
+          </Button>
+          <Button 
+            onClick={() => {
+              if (pdfSaveFn) pdfSaveFn();
+              setPdfPreviewUrl(null);
+              setPdfSaveFn(null);
+            }} 
+            variant="contained"
+            color="primary"
+            sx={{ flex: 1, py: 1.5, fontSize: '1.1rem', background: '#10B981', color: '#fff', boxShadow: '0 4px 20px rgba(16,185,129,0.4)', '&:hover': { background: '#059669', boxShadow: '0 6px 24px rgba(16,185,129,0.5)' } }}
+          >
+            Download PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </ThemeProvider>
   );

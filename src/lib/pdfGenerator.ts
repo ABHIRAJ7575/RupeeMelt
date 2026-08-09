@@ -17,7 +17,7 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   // Header
   doc.setFontSize(20);
   doc.setTextColor(44, 62, 80); // #2C3E50 Crisp deep charcoal-slate
-  doc.text(`RupeeMelt Ledger Report`, 14, 22);
+  doc.text(`Abhiraj Dixit's Transactions`, 14, 22);
   
   doc.setFontSize(12);
   doc.setTextColor(90, 108, 125);
@@ -25,17 +25,21 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   doc.text(`Generated: ${formatDate(new Date())}`, 14, 36);
 
   // Table Data
-  const tableData = transactions.map(item => [
-    formatDate(item.created_at),
-    item.description || 'N/A',
-    item.transaction_direction,
-    item.category,
-    '₹' + (item.amount_paisa / 100).toFixed(2)
-  ]);
+  const tableData = transactions.map((item, index) => {
+    let modeText = item.payment_method === 'online' ? 'Online' : 'Cash';
+    return [
+      (index + 1).toString(),
+      formatDate(item.created_at),
+      modeText,
+      item.category,
+      item.description || 'N/A',
+      (item.amount_paisa / 100).toLocaleString('en-IN')
+    ];
+  });
 
   autoTable(doc, {
     startY: 45,
-    head: [['Date', 'Description', 'Type', 'Category', 'Amount']],
+    head: [['S.No', 'Date', 'Mode (Online/Cash)', 'Category', 'Description', 'Amount (Rs.)']],
     body: tableData,
     theme: 'grid',
     headStyles: {
@@ -48,6 +52,24 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
     },
     alternateRowStyles: {
       fillColor: [244, 247, 246] // #F4F7F6 Ultra-light mint-ceramic white
+    },
+    didParseCell: function(data) {
+      if (data.section === 'body') {
+        const rawRow = data.row.raw as any[];
+        const isHighlighted = rawRow && rawRow[4] && rawRow[4].toString().includes('[HIGHLIGHT]');
+        if (isHighlighted) {
+          data.cell.styles.fillColor = [254, 240, 138]; // #FEF08A Pale gold
+          data.cell.styles.textColor = [0, 0, 0];
+        }
+        
+        if (data.column.index === 4 && data.cell.text) {
+          if (typeof data.cell.text === 'string') {
+            (data.cell as any).text = (data.cell.text as string).replace(/\[HIGHLIGHT\]/g, '').trim();
+          } else if (Array.isArray(data.cell.text)) {
+            (data.cell as any).text = (data.cell.text as string[]).map((t: string) => typeof t === 'string' ? t.replace(/\[HIGHLIGHT\]/g, '').trim() : t);
+          }
+        }
+      }
     }
   });
 
@@ -102,5 +124,11 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
     }
   });
 
-  doc.save(`RupeeMelt_${roomName.replace(/\s+/g, '_')}_Report.pdf`);
+  const blobUrl = doc.output('bloburl');
+  return {
+    blobUrl: blobUrl.toString(),
+    save: () => {
+      doc.save(`RupeeMelt_${roomName.replace(/\s+/g, '_')}_Report.pdf`);
+    }
+  };
 };

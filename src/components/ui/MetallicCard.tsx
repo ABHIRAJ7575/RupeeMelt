@@ -3,29 +3,17 @@ import { Card, styled } from '@mui/material';
 import type { CardProps } from '@mui/material/Card';
 
 const StyledCard = styled(Card)(({ theme }) => ({
-  background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8))',
-  boxShadow: '0 24px 48px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
-  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-  backdropFilter: 'blur(40px)',
-  WebkitBackdropFilter: 'blur(40px)', // Safari support
+  backgroundColor: '#141923',
+  border: '1px solid #1E2638',
+  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
   borderRadius: theme.shape.borderRadius,
   position: 'relative',
   overflow: 'hidden',
   transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
 
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '1px',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-  },
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.06)',
+    boxShadow: '0 6px 10px -1px rgba(0, 0, 0, 0.6)',
   }
 }));
 
