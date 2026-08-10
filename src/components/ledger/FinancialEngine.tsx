@@ -21,7 +21,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
   const [isHighlight, setIsHighlight] = useState(false);
 
   const depositCategories = ["Salary", "Cashback", "Others"];
-  const withdrawCategories = ["Pulsar", "Meteor 350", "Activa H Smart", "Eco-Sport", "Outing", "Fast-Food", "Home Expenses", "MBA", "SIP", "To Mummy", "To Papa", "Paying Loan", "Others"];
+  const withdrawCategories = ["Pulsar", "Meteor 350", "Activa H Smart", "Eco-Sport", "Outing", "Fast-Food", "Home Expenses", "MBA", "SIP", "To Mummy", "To Papa", "Paying Loan", "Cell Phone Recharge", "Others"];
   const currentCategories = transactionType === 'inflow' ? depositCategories : withdrawCategories;
 
   const handleModeSelect = (mode: 'inflow' | 'outflow') => {
