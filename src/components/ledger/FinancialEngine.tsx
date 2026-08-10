@@ -114,7 +114,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
           }}
         >
           <SouthIcon sx={{ fontSize: 40, mb: 1 }} />
-          Deposit / Inflow
+          Credit (+)
         </Button>
 
         <Button
@@ -150,7 +150,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
           }}
         >
           <NorthIcon sx={{ fontSize: 40, mb: 1 }} />
-          Withdraw / Expense
+          Debit (-)
         </Button>
       </Box>
 
@@ -161,7 +161,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h5" color={transactionType === 'inflow' ? '#10B981' : '#F43F5E'} sx={{ fontWeight: 700 }}>
-              {transactionType === 'inflow' ? 'Recording a Deposit' : 'Recording an Expense'}
+              {transactionType === 'inflow' ? 'Recording a Credit' : 'Recording a Debit'}
             </Typography>
           </Box>
 

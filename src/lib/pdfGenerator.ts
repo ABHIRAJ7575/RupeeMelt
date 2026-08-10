@@ -24,23 +24,53 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   doc.text(`Room: ${roomName}`, 14, 30);
   doc.text(`Generated: ${formatDate(new Date())}`, 14, 36);
 
+  // Grand Totals Calculation
+  const totalDebit = transactions.filter(t => t.transaction_direction === 'outflow').reduce((sum, t) => sum + (t.amount_paisa / 100), 0);
+  const totalCredit = transactions.filter(t => t.transaction_direction === 'inflow').reduce((sum, t) => sum + (t.amount_paisa / 100), 0);
+  const totalDebitFormatted = totalDebit.toLocaleString('en-IN');
+  const totalCreditFormatted = totalCredit.toLocaleString('en-IN');
+
   // Table Data
   const tableData = transactions.map((item, index) => {
     let modeText = item.payment_method === 'online' ? 'Online' : 'Cash';
+    const amountStr = (item.amount_paisa / 100).toLocaleString('en-IN');
+    
+    // Determine Debit vs Credit
+    const debit = item.transaction_direction === 'outflow' ? amountStr : '-';
+    const credit = item.transaction_direction === 'inflow' ? amountStr : '-';
+
     return [
       (index + 1).toString(),
       formatDate(item.created_at),
       modeText,
       item.category,
       item.description || 'N/A',
-      (item.amount_paisa / 100).toLocaleString('en-IN')
+      debit,
+      credit
     ];
   });
 
   autoTable(doc, {
     startY: 45,
-    head: [['S.No', 'Date', 'Mode (Online/Cash)', 'Category', 'Description', 'Amount (Rs.)']],
+    head: [['S.No', 'Date', 'Mode', 'Category', 'Description', 'Debit (Dr.)', 'Credit (Cr.)']],
     body: tableData,
+    foot: [
+      [
+        { 
+          content: 'GRAND TOTALS', 
+          colSpan: 5, 
+          styles: { halign: 'right', fontStyle: 'bold', fillColor: [30, 38, 56], textColor: 255 } 
+        },
+        { 
+          content: totalDebitFormatted, 
+          styles: { fontStyle: 'bold', fillColor: [244, 63, 94], textColor: 255 } // Crimson Red
+        },
+        { 
+          content: totalCreditFormatted, 
+          styles: { fontStyle: 'bold', fillColor: [16, 185, 129], textColor: 255 } // Emerald Green
+        }
+      ]
+    ],
     theme: 'grid',
     headStyles: {
       fillColor: [39, 174, 96], // #27AE60 Vibrant emerald-mint

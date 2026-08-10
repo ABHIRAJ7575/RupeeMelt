@@ -93,11 +93,20 @@ export default function App() {
     }
   };
 
-  // Data Purity: Initialized to strictly 0
-  const [cashOnHandPaisa, setCashOnHandPaisa] = useState(0);
-  const [totalExpensesPaisa, setTotalExpensesPaisa] = useState(0);
-  const [totalInflowPaisa, setTotalInflowPaisa] = useState(0);
+  // Data Purity: Derived directly from transactions state for instant UI sync
   const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
+
+  const { cashOnHandPaisa, totalExpensesPaisa, totalInflowPaisa } = transactions.reduce((acc, t) => {
+    const amount = Number(t.amount_paisa);
+    if (t.transaction_direction === 'outflow') {
+      acc.totalExpensesPaisa += amount;
+      if (t.payment_method === 'offline') acc.cashOnHandPaisa -= amount;
+    } else {
+      acc.totalInflowPaisa += amount;
+      if (t.payment_method === 'offline') acc.cashOnHandPaisa += amount;
+    }
+    return acc;
+  }, { cashOnHandPaisa: 0, totalExpensesPaisa: 0, totalInflowPaisa: 0 });
 
   const totalNetBalancePaisa = totalInflowPaisa - totalExpensesPaisa;
 
@@ -108,6 +117,13 @@ export default function App() {
   // PDF Preview State
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfSaveFn, setPdfSaveFn] = useState<(() => void) | null>(null);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+    setPageNumber(1);
+  }
 
   const playCoinSound = () => {
     try {
@@ -179,6 +195,11 @@ export default function App() {
     });
   };
 
+  const handleDeleteTransaction = async (id: string) => {
+    setTransactions(prev => prev.filter(tx => tx.id !== id));
+    await supabase.from('user_ledger').delete().eq('id', id);
+  };
+
   const fetchLedger = async () => {
     const { data, error } = await supabase.from('user_ledger').select('*');
     if (error) {
@@ -187,21 +208,6 @@ export default function App() {
     }
 
     if (data) {
-      const metrics = data.reduce((acc, t) => {
-        const amount = Number(t.amount_paisa);
-        if (t.transaction_direction === 'outflow') {
-          acc.expenses += amount;
-          if (t.payment_method === 'offline') acc.cash -= amount;
-        } else {
-          acc.inflows += amount;
-          if (t.payment_method === 'offline') acc.cash += amount;
-        }
-        return acc;
-      }, { cash: 0, expenses: 0, inflows: 0 });
-
-      setCashOnHandPaisa(metrics.cash);
-      setTotalExpensesPaisa(metrics.expenses);
-      setTotalInflowPaisa(metrics.inflows);
       setTransactions(data as LedgerTransaction[]);
     }
   };
@@ -544,10 +550,96 @@ export default function App() {
           </MetallicCard>
         </Box>
 
-        {/* Central Transaction Console */}
+        {/* Central Transaction Console & Live Feed */}
         <Box className="dashboard-grid">
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 3cqi, 3rem)' }}>
             <FinancialEngine onRecordTransaction={handleRecordTransaction} />
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Recent Transactions
+            </Typography>
+            <Box sx={{ 
+              backgroundColor: '#141923', 
+              border: '1px solid #1E2638', 
+              borderRadius: '16px', 
+              maxHeight: '400px', 
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': { width: '6px' },
+              '&::-webkit-scrollbar-track': { background: 'transparent' },
+              '&::-webkit-scrollbar-thumb': { background: '#1E2638', borderRadius: '4px' }
+            }}>
+              {transactions.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(tx => {
+                const isHighlighted = tx.description?.includes('[HIGHLIGHT]');
+                const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').trim();
+                
+                return (
+                <Box key={tx.id} sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  padding: '12px 16px', 
+                  borderBottom: '1px solid rgba(30, 38, 56, 0.5)',
+                  background: isHighlighted ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, transparent 100%)' : 'transparent',
+                  borderLeft: isHighlighted ? '3px solid #FACC15' : 'none',
+                  '&:last-child': { borderBottom: 'none' }
+                }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#F8FAFC', fontWeight: 600 }}>
+                      {tx.category} {displayDescription ? `- ${displayDescription}` : ''}
+                    </Typography>
+                    <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#64748B', fontSize: '0.75rem' }}>
+                      {new Date(tx.created_at).toLocaleDateString()} • {tx.payment_method}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography sx={{ 
+                      fontFamily: "'JetBrains Mono', monospace", 
+                      fontWeight: 700, 
+                      color: tx.transaction_direction === 'inflow' ? '#10B981' : '#F43F5E' 
+                    }}>
+                      {tx.transaction_direction === 'inflow' ? '+' : '-'}₹{(tx.amount_paisa / 100).toLocaleString('en-IN')}
+                    </Typography>
+                    <button 
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: '#475569', 
+                        padding: '8px', 
+                        cursor: 'pointer', 
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.color = '#F43F5E';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
+                        e.currentTarget.style.borderRadius = '8px';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.color = '#475569';
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </Box>
+                </Box>
+              )})}
+              {transactions.length === 0 && (
+                <Box sx={{ p: 4, textAlign: 'center' }}>
+                  <Typography sx={{ color: '#64748B' }}>No recent transactions.</Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
       </Container>
@@ -595,7 +687,15 @@ export default function App() {
           background: 'radial-gradient(circle at center, transparent 40%, rgba(16, 185, 129, 0.05) 80%, rgba(16, 185, 129, 0.15) 100%)',
           boxShadow: 'inset 0 0 120px 20px rgba(16, 185, 129, 0.5), inset 0 0 40px 5px rgba(16, 185, 129, 0.8)',
           animation: 'pulse3D 3.5s ease-out forwards',
-        }} />
+        }}>
+          <Box sx={{
+            position: 'absolute', top: '50%', left: '50%', width: '100px', height: '100px', marginTop: '-50px', marginLeft: '-50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: 'white', transformStyle: 'preserve-3d', willChange: 'transform, opacity',
+            background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.6), inset 0 0 15px rgba(255,255,255,0.4)', border: '2px solid #34D399',
+            animation: 'popAndFlip 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+          }}>
+            ₹
+          </Box>
+        </Box>
       )}
 
       {vfxMode === 'withdraw' && (
@@ -610,7 +710,15 @@ export default function App() {
           background: 'radial-gradient(circle at center, transparent 40%, rgba(244, 63, 94, 0.05) 80%, rgba(244, 63, 94, 0.15) 100%)',
           boxShadow: 'inset 0 0 120px 20px rgba(244, 63, 94, 0.6), inset 0 0 40px 5px rgba(244, 63, 94, 0.9)',
           animation: 'flash3D 3.5s ease-out forwards',
-        }} />
+        }}>
+          <Box sx={{
+            position: 'absolute', top: '50%', left: '50%', width: '100px', height: '100px', marginTop: '-50px', marginLeft: '-50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: 'white', transformStyle: 'preserve-3d', willChange: 'transform, opacity',
+            background: 'linear-gradient(135deg, #F43F5E, #E11D48)', boxShadow: '0 10px 30px rgba(244, 63, 94, 0.6), inset 0 0 15px rgba(255,255,255,0.4)', border: '2px solid #FB7185',
+            animation: 'popAndFlip 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+          }}>
+            ₹
+          </Box>
+        </Box>
       )}
 
       {/* In-App PDF Preview Modal */}
@@ -635,19 +743,39 @@ export default function App() {
         </DialogTitle>
         <DialogContent sx={{ p: 0, height: '500px' }}>
           {pdfPreviewUrl && (
-            <div style={{ width: '100%', height: '60vh', overflowY: 'auto', backgroundColor: '#0B0E14', display: 'flex', justifyContent: 'center', borderRadius: '8px', padding: '8px' }}>
-              <Document
-                file={pdfPreviewUrl}
-                loading={<p style={{ color: '#10B981', fontFamily: "'JetBrains Mono', monospace" }}>Rendering Ledger...</p>}
-                error={<p style={{ color: '#F43F5E', fontFamily: "'JetBrains Mono', monospace" }}>Failed to load PDF preview.</p>}
-              >
-                <Page
-                  pageNumber={1}
-                  renderAnnotationLayer={false}
-                  renderTextLayer={false}
-                  width={window.innerWidth < 600 ? window.innerWidth - 80 : 450}
-                />
-              </Document>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ flex: 1, width: '100%', overflowY: 'auto', backgroundColor: '#0B0E14', display: 'flex', justifyContent: 'center', borderRadius: '8px', padding: '8px' }}>
+                <Document
+                  file={pdfPreviewUrl}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  loading={<p style={{ color: '#10B981', fontFamily: "'JetBrains Mono', monospace" }}>Rendering Ledger...</p>}
+                  error={<p style={{ color: '#F43F5E', fontFamily: "'JetBrains Mono', monospace" }}>Failed to load PDF preview.</p>}
+                >
+                  <Page
+                    pageNumber={pageNumber}
+                    renderAnnotationLayer={false}
+                    renderTextLayer={false}
+                    width={window.innerWidth < 600 ? window.innerWidth - 80 : 450}
+                  />
+                </Document>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 16px', color: '#94A3B8', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.85rem', backgroundColor: '#0B0E14', borderTop: '1px solid #1E2638' }}>
+                <button 
+                  onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                  disabled={pageNumber === 1}
+                  style={{ background: '#1E2638', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px', padding: '6px 12px', cursor: pageNumber === 1 ? 'default' : 'pointer', transition: 'all 0.2s', opacity: pageNumber === 1 ? 0.5 : 1, pointerEvents: pageNumber === 1 ? 'none' : 'auto' }}
+                >
+                  Previous
+                </button>
+                <span>Page {pageNumber} of {numPages || '--'}</span>
+                <button 
+                  onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages || 1))}
+                  disabled={pageNumber === numPages}
+                  style={{ background: '#1E2638', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px', padding: '6px 12px', cursor: pageNumber === numPages ? 'default' : 'pointer', transition: 'all 0.2s', opacity: pageNumber === numPages ? 0.5 : 1, pointerEvents: pageNumber === numPages ? 'none' : 'auto' }}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </DialogContent>
