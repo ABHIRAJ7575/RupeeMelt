@@ -9,6 +9,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import PaymentsIcon from '@mui/icons-material/Payments';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 import { MetallicCard } from './components/ui/MetallicCard';
 import Odometer from './components/ui/Odometer';
@@ -68,8 +69,39 @@ const darkTheme = createTheme({
   }
 });
 
+const eliteTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#F59E0B', // Champagne Gold
+    },
+    secondary: {
+      main: '#3B82F6', // Sapphire Blue
+    },
+    success: {
+      main: '#3B82F6', // Sapphire Blue instead of Emerald for Elite Mode
+    },
+    error: {
+      main: '#F43F5E',
+    },
+    background: {
+      default: '#0B0E14',
+      paper: '#141923',
+    },
+    text: {
+      primary: '#F8FAFC',
+      secondary: '#94A3B8',
+    }
+  },
+  typography: darkTheme.typography,
+  components: darkTheme.components
+});
+
 export default function App() {
-  const currentRoomId = 'default_room';
+  const [isEliteVault, setIsEliteVault] = useState(false);
+  const [tripMembers, setTripMembers] = useState<string[]>(() => JSON.parse(localStorage.getItem('elite_roster') || '[]'));
+  
+  const currentRoomId = isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger';
   const [isIncognito, setIsIncognito] = useState(() => {
     return localStorage.getItem('rupeeMelt_incognito') === 'true';
   });
@@ -80,17 +112,6 @@ export default function App() {
 
     // Save locally for instant zero-latency boot
     localStorage.setItem('rupeeMelt_incognito', String(nextState));
-
-    // Silently sync to Supabase settings if a active ledger/room is loaded
-    try {
-      if (currentRoomId) {
-        await supabase
-          .from('ledger_settings')
-          .upsert({ room_id: currentRoomId, is_incognito: nextState });
-      }
-    } catch (err) {
-      console.log('Local persistence fallback active');
-    }
   };
 
   // Data Purity: Derived directly from transactions state for instant UI sync
@@ -197,43 +218,47 @@ export default function App() {
 
   const handleDeleteTransaction = async (id: string) => {
     setTransactions(prev => prev.filter(tx => tx.id !== id));
-    await supabase.from('user_ledger').delete().eq('id', id);
+    try {
+      await supabase.from('user_ledger').delete().eq('id', id);
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+    }
   };
 
-  const fetchLedger = async () => {
-    const { data, error } = await supabase.from('user_ledger').select('*');
-    if (error) {
-      console.error('Error fetching ledger:', error);
-      return;
-    }
+  const fetchTransactions = async (activeRoomId: string) => {
+    // 1. Clear existing UI state instantly
+    setTransactions([]);
 
-    if (data) {
-      setTransactions(data as LedgerTransaction[]);
+    // 2. Fetch fresh data for the specific room
+    try {
+      const { data, error } = await supabase
+        .from('user_ledger')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const routedData = data.filter(tx => {
+          const isTripTx = tx.description?.includes('[ELITE]');
+          return isEliteVault ? isTripTx : !isTripTx;
+        });
+        setTransactions(routedData as LedgerTransaction[]);
+      } else if (error) {
+        console.error('Error fetching ledger:', error);
+      }
+    } catch (error) {
+      console.error('Error in fetchTransactions:', error);
     }
   };
 
   useEffect(() => {
-    fetchLedger();
-
-    // Initial Boot Sync (Cross-Device)
-    const syncIncognitoState = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('ledger_settings')
-          .select('is_incognito')
-          .eq('room_id', currentRoomId)
-          .maybeSingle();
-
-        if (data && !error && data.is_incognito !== null) {
-          setIsIncognito(data.is_incognito);
-          localStorage.setItem('rupeeMelt_incognito', String(data.is_incognito));
-        }
-      } catch (err) {
-        console.log('Sync failed, using local preference');
-      }
-    };
-    syncIncognitoState();
-  }, []);
+    const activeRoom = isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger';
+    fetchTransactions(activeRoom);
+  }, [isEliteVault]);
+  
+  // Save trip members when changed
+  useEffect(() => {
+    localStorage.setItem('elite_roster', JSON.stringify(tripMembers));
+  }, [tripMembers]);
 
   const expensesByCategory = transactions
     .filter(t => t.transaction_direction === 'outflow')
@@ -251,20 +276,30 @@ export default function App() {
   const PIE_COLORS = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
 
   const handleRecordTransaction = async (amountPaisa: number, type: 'inflow' | 'outflow', paymentMethod: 'online' | 'offline', category: string, desc: string) => {
-    const { error } = await supabase.from('user_ledger').insert({
-      amount_paisa: amountPaisa,
-      transaction_direction: type,
-      payment_method: paymentMethod,
-      category,
-      description: desc
-    });
+    try {
+      let finalDesc = desc;
+      if (isEliteVault) {
+        finalDesc = finalDesc ? `${finalDesc} [ELITE]` : '[ELITE]';
+      }
 
-    if (error) {
+      const { error } = await supabase.from('user_ledger').insert({
+        amount_paisa: amountPaisa,
+        transaction_direction: type,
+        payment_method: paymentMethod,
+        category,
+        description: finalDesc
+      });
+
+      if (error) {
+        console.error('Error recording transaction:', error);
+        return;
+      }
+    } catch (error) {
       console.error('Error recording transaction:', error);
       return;
     }
 
-    await fetchLedger();
+    await fetchTransactions(currentRoomId);
 
     if (type === 'inflow') {
       playCoinSound();
@@ -281,7 +316,7 @@ export default function App() {
   };
 
   const handleExport = () => {
-    const { blobUrl, save } = generateLedgerReport('My_Personal_Ledger', transactions);
+    const { blobUrl, save } = generateLedgerReport(currentRoomId, transactions);
     setPdfPreviewUrl(blobUrl);
     setPdfSaveFn(() => save);
   };
@@ -289,82 +324,132 @@ export default function App() {
   const executeSarcasticReset = async () => {
     // Stage 3: Actual Wipe
     console.warn("Executing Supabase DELETE * FROM user_ledger...");
-    const { error } = await supabase.from('user_ledger').delete().neq('amount_paisa', -1);
-    if (error) {
+    try {
+      const idsToDelete = transactions.map(t => t.id);
+      if (idsToDelete.length === 0) {
+        setResetStage(0);
+        return;
+      }
+      const { error } = await supabase.from('user_ledger').delete().in('id', idsToDelete);
+      if (error) {
+        console.error('Error wiping ledger:', error);
+      } else {
+        fetchTransactions(currentRoomId);
+      }
+    } catch (error) {
       console.error('Error wiping ledger:', error);
-    } else {
-      fetchLedger();
     }
     setResetStage(0);
   };
 
-  return (
-    <ThemeProvider theme={darkTheme}>
-      <ParticleEngine />
+  console.log("🔥 RENDER CYCLE -> Vault:", isEliteVault ? "ELITE TRIP" : "PERSONAL", "| Active Room ID:", isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger');
 
-      <Container maxWidth={false} sx={{ maxWidth: 'var(--app-max-width)', py: 'clamp(2rem, 4cqi, 4rem)', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 'clamp(2rem, 4cqi, 4rem)', position: 'relative', zIndex: 10 }}>
-        {/* Header Pipeline */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography
-              component="span"
-              sx={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: 'clamp(2.5rem, 6cqi, 4rem)',
+  return (
+    <ThemeProvider theme={isEliteVault ? eliteTheme : darkTheme}>
+      <Box sx={{ background: isEliteVault ? '#0A0F1C' : '#0B0E14', minHeight: '100vh', transition: 'background 0.5s ease', position: 'relative' }}>
+        <ParticleEngine />
+
+        <Container maxWidth={false} sx={{ maxWidth: 'var(--app-max-width)', py: 'clamp(2rem, 4cqi, 4rem)', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 'clamp(2rem, 4cqi, 4rem)', position: 'relative', zIndex: 10 }}>
+          {/* Header Pipeline */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textAlign: 'center' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+            {/* LEFT: Massive Logo */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              filter: 'drop-shadow(0 0 15px rgba(245, 158, 11, 0.4))' 
+            }}>
+              <Typography
+                component="span"
+                sx={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontSize: '5rem',
+                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  lineHeight: 0.8,
+                  flexShrink: 0
+                }}
+              >
+                ₹
+              </Typography>
+            </Box>
+
+            {/* RIGHT: Text Stack */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
+              <Typography sx={{
                 fontWeight: 800,
-                background: 'linear-gradient(135deg, #FBBF24 0%, #F97316 100%)',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                background: 'linear-gradient(135deg, #F6D365 0%, #FDA085 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 0 12px rgba(251, 191, 36, 0.6))',
-                lineHeight: 1
-              }}
-            >
-              ₹
-            </Typography>
-            <Box>
-              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
+                backgroundClip: 'text',
+                color: 'transparent',
+                zIndex: 100,
+                marginBottom: '2px'
+              }}>
+                Only for personal use of Abhiraj Dixit
+              </Typography>
+
+              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF', display: 'flex', alignItems: 'center' }}>
                 RupeeMelt
+                <span style={{ 
+                  fontFamily: 'JetBrains Mono, monospace', 
+                  fontSize: '0.65rem', 
+                  fontWeight: '600', 
+                  color: isEliteVault ? '#FACC15' : '#94A3B8', 
+                  backgroundColor: 'rgba(30, 38, 56, 0.4)', 
+                  border: `1px solid ${isEliteVault ? 'rgba(250, 204, 21, 0.3)' : '#334155'}`, 
+                  borderRadius: '9999px', 
+                  padding: '2px 8px', 
+                  marginLeft: '8px', 
+                  letterSpacing: '1px', 
+                  verticalAlign: 'middle' 
+                }}>V5.0</span>
               </Typography>
-              <Typography variant="subtitle1" sx={{ color: '#94A3B8', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                Abhiraj's Transaction Ledger
-              </Typography>
+              
+              {isEliteVault ? (
+                <div style={{ display: 'inline-block', marginTop: '4px', padding: '4px 12px', border: '1px solid rgba(250, 204, 21, 0.3)', borderRadius: '9999px', background: 'rgba(250, 204, 21, 0.05)', boxShadow: '0 0 12px rgba(250, 204, 21, 0.1)' }}>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', fontWeight: '600', color: '#FACC15', letterSpacing: '0.15em' }}>ELITE TRIP VAULT : ACTIVE</span>
+                </div>
+              ) : (
+                <p style={{ color: '#94A3B8', fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '4px', marginBottom: 0 }}>ABHIRAJ'S TRANSACTION LEDGER</p>
+              )}
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-            <Typography sx={{
-              position: 'absolute',
-              top: 16,
-              right: 24,
-              fontWeight: 800,
-              fontSize: '0.7rem',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              background: 'linear-gradient(135deg, #F6D365 0%, #FDA085 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              color: 'transparent',
-              zIndex: 100
-            }}>
-              Only for personal use of Abhiraj Dixit
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                onClick={toggleIncognito}
-              >
-                {isIncognito ? 'Reveal' : 'Incognito'}
-              </Button>
-              <Button variant="outlined" color="primary" startIcon={<PictureAsPdfIcon />} onClick={handleExport}>
-                Export PDF
-              </Button>
-              <Button variant="outlined" color="error" startIcon={<DeleteForeverIcon />} onClick={() => setResetStage(1)}>
-                Reset Ledger
-              </Button>
-            </Box>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', mt: 3, mb: 1 }}>
+            <Button
+              variant={isEliteVault ? "contained" : "outlined"}
+              sx={{
+                color: isEliteVault ? '#0B0E14' : '#F59E0B',
+                background: isEliteVault ? '#F59E0B' : 'transparent',
+                borderColor: '#F59E0B',
+                fontWeight: 800,
+                '&:hover': { background: isEliteVault ? '#D97706' : 'rgba(245, 158, 11, 0.1)' }
+              }}
+              onClick={() => setIsEliteVault(!isEliteVault)}
+              startIcon={<AutoAwesomeIcon />}
+            >
+              {isEliteVault ? 'Exit Vault' : 'Elite Expenses'}
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              onClick={toggleIncognito}
+            >
+              {isIncognito ? 'Reveal' : 'Incognito'}
+            </Button>
+            <Button variant="outlined" color="primary" startIcon={<PictureAsPdfIcon />} onClick={handleExport}>
+              Export PDF
+            </Button>
+            <Button variant="outlined" color="error" startIcon={<DeleteForeverIcon />} onClick={() => setResetStage(1)}>
+              Reset Ledger
+            </Button>
           </Box>
         </Box>
 
@@ -426,7 +511,7 @@ export default function App() {
             <Typography
               variant="h2"
               className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#10B981' }}
+              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: isEliteVault ? '#3B82F6' : '#10B981' }}
             >
               <Odometer amount={totalInflowPaisa} />
             </Typography>
@@ -553,7 +638,12 @@ export default function App() {
         {/* Central Transaction Console & Live Feed */}
         <Box className="dashboard-grid">
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 3cqi, 3rem)' }}>
-            <FinancialEngine onRecordTransaction={handleRecordTransaction} />
+            <FinancialEngine 
+              onRecordTransaction={handleRecordTransaction} 
+              isEliteVault={isEliteVault}
+              tripMembers={tripMembers}
+              setTripMembers={setTripMembers}
+            />
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -572,7 +662,7 @@ export default function App() {
             }}>
               {transactions.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(tx => {
                 const isHighlighted = tx.description?.includes('[HIGHLIGHT]');
-                const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').trim();
+                const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').replace('[ELITE]', '').trim();
                 
                 return (
                 <Box key={tx.id} sx={{ 
@@ -597,7 +687,7 @@ export default function App() {
                     <Typography sx={{ 
                       fontFamily: "'JetBrains Mono', monospace", 
                       fontWeight: 700, 
-                      color: tx.transaction_direction === 'inflow' ? '#10B981' : '#F43F5E' 
+                      color: tx.transaction_direction === 'inflow' ? (isEliteVault ? '#3B82F6' : '#10B981') : '#F43F5E' 
                     }}>
                       {tx.transaction_direction === 'inflow' ? '+' : '-'}₹{(tx.amount_paisa / 100).toLocaleString('en-IN')}
                     </Typography>
@@ -643,6 +733,7 @@ export default function App() {
           </Box>
         </Box>
       </Container>
+      </Box>
 
       {/* Reset Ledger Modals */}
       <Dialog

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, TextField, ToggleButton, ToggleButtonGroup, FormControl, InputLabel, Select, MenuItem, IconButton, FormControlLabel, Switch } from '@mui/material';
+import { Box, Typography, Button, TextField, ToggleButton, ToggleButtonGroup, FormControl, InputLabel, Select, MenuItem, IconButton, FormControlLabel, Switch, Chip } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SouthIcon from '@mui/icons-material/South';
 import NorthIcon from '@mui/icons-material/North';
@@ -8,9 +8,12 @@ import { MetallicCard } from '../ui/MetallicCard';
 
 interface FinancialEngineProps {
   onRecordTransaction: (amountPaisa: number, type: 'inflow' | 'outflow', paymentMethod: 'online' | 'offline', category: string, desc: string) => Promise<void>;
+  isEliteVault?: boolean;
+  tripMembers?: string[];
+  setTripMembers?: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransaction }) => {
+export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransaction, isEliteVault = false, tripMembers = [], setTripMembers }) => {
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [amountStr, setAmountStr] = useState('');
   const [description, setDescription] = useState('');
@@ -19,14 +22,30 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
   const [category, setCategory] = useState('Others');
 
   const [isHighlight, setIsHighlight] = useState(false);
+  
+  // Trip Splitter State
+  const [newMemberName, setNewMemberName] = useState('');
+  const [selectedSplitters, setSelectedSplitters] = useState<string[]>([]);
 
-  const depositCategories = ["Salary", "Cashback", "Others"];
-  const withdrawCategories = ["Pulsar", "Meteor 350", "Activa H Smart", "Eco-Sport", "Outing", "Fast-Food", "Home Expenses", "MBA", "SIP", "To Mummy", "To Papa", "Paying Loan", "Cell Phone Recharge", "Others"];
-  const currentCategories = transactionType === 'inflow' ? depositCategories : withdrawCategories;
+  const currentCategories = isEliteVault 
+    ? (transactionType === 'inflow' ? ['Trip Fund Collection', 'Refund', 'Others'] : ['Flight/Train', 'Hotel/Stay', 'Food & Drinks', 'Cab/Transport', 'Activities', 'Others'])
+    : (transactionType === 'inflow' ? ['Salary', 'Cashback', 'Others'] : ['Pulsar', 'Meteor 350', 'Outing', 'Fast-Food', 'Home Expenses', 'MBA', 'SIP', 'To Mummy', 'To Papa', 'Paying Loan', 'Cell Phone Recharge', 'Others']);
+
+  React.useEffect(() => {
+    if (transactionType === 'outflow') {
+      setCategory(isEliteVault ? 'Food & Drinks' : 'Pulsar');
+    } else {
+      setCategory(isEliteVault ? 'Trip Fund Collection' : 'Salary');
+    }
+  }, [isEliteVault]);
 
   const handleModeSelect = (mode: 'inflow' | 'outflow') => {
     setTransactionType(mode);
-    setCategory(mode === 'inflow' ? 'Salary' : 'Pulsar');
+    if (mode === 'inflow') {
+      setCategory(isEliteVault ? 'Trip Fund Collection' : 'Salary');
+    } else {
+      setCategory(isEliteVault ? 'Food & Drinks' : 'Pulsar');
+    }
     setFormStep(2);
   };
 
@@ -36,13 +55,21 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
     setDescription('');
     setCategory('Others');
     setIsHighlight(false);
+    setSelectedSplitters([]);
   };
 
   const handleSubmit = async () => {
     const amount = parseFloat(amountStr);
     if (!isNaN(amount) && amount > 0) {
       const paisa = Math.round(amount * 100);
-      const finalDescription = isHighlight ? description + (description ? ' ' : '') + '[HIGHLIGHT]' : description;
+      let finalDescription = isHighlight ? description + (description ? ' ' : '') + '[HIGHLIGHT]' : description;
+      
+      if (isEliteVault && selectedSplitters.length > 0) {
+        const splitMath = Math.round(amount / selectedSplitters.length);
+        const splitStr = `[Split: ${selectedSplitters.join(', ')}] (₹${splitMath} each)`;
+        finalDescription = finalDescription ? `${finalDescription} | ${splitStr}` : splitStr;
+      }
+      
       await onRecordTransaction(paisa, transactionType, paymentMethod, category, finalDescription);
       resetForm();
     }
@@ -153,6 +180,71 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
           Debit (-)
         </Button>
       </Box>
+
+      {isEliteVault && (
+        <Box sx={{ mt: 1, p: 2, background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+          <Typography sx={{ color: '#3B82F6', fontWeight: 600, mb: 2, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Trip Roster
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+            {tripMembers.map(member => (
+              <Chip 
+                key={member}
+                label={member}
+                onDelete={() => {
+                  if (setTripMembers) {
+                    setTripMembers(prev => prev.filter(m => m !== member));
+                  }
+                }}
+                sx={{ 
+                  background: '#1E293B', 
+                  color: '#F8FAFC', 
+                  border: '1px solid #334155',
+                  borderRadius: '9999px',
+                  '& .MuiChip-deleteIcon': { color: '#64748B', '&:hover': { color: '#F43F5E' } }
+                }}
+              />
+            ))}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField 
+              size="small"
+              placeholder="Add Member (e.g. Rahul)"
+              value={newMemberName}
+              onChange={(e) => setNewMemberName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newMemberName.trim() && setTripMembers && !tripMembers.includes(newMemberName.trim())) {
+                  setTripMembers(prev => [...prev, newMemberName.trim()]);
+                  setNewMemberName('');
+                }
+              }}
+              sx={{ 
+                flex: 1,
+                '& .MuiOutlinedInput-root': { 
+                  color: '#F8FAFC',
+                  borderRadius: '8px',
+                  background: '#0F172A',
+                  '& fieldset': { borderColor: '#334155' },
+                  '&:hover fieldset': { borderColor: '#3B82F6' },
+                  '&.Mui-focused fieldset': { borderColor: '#3B82F6' },
+                }
+              }}
+            />
+            <Button 
+              variant="outlined" 
+              onClick={() => {
+                if (newMemberName.trim() && setTripMembers && !tripMembers.includes(newMemberName.trim())) {
+                  setTripMembers(prev => [...prev, newMemberName.trim()]);
+                  setNewMemberName('');
+                }
+              }}
+              sx={{ color: '#3B82F6', borderColor: '#3B82F6', '&:hover': { background: 'rgba(59, 130, 246, 0.1)' } }}
+            >
+              Add
+            </Button>
+          </Box>
+        </Box>
+      )}
 
       {formStep === 2 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, animation: 'slideDown 0.4s ease-out' }}>
@@ -275,6 +367,46 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
               '& .MuiInputLabel-root.Mui-focused': { color: transactionType === 'inflow' ? '#10B981' : '#F43F5E' },
             }}
           />
+
+          {isEliteVault && tripMembers.length > 0 && (
+            <Box sx={{ mt: 1, p: 2, background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', border: '1px dashed #334155' }}>
+              <Typography sx={{ color: '#94A3B8', fontWeight: 600, mb: 1.5, fontSize: '0.875rem' }}>
+                Split this expense with:
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {tripMembers.map(member => {
+                  const isSelected = selectedSplitters.includes(member);
+                  return (
+                    <Chip
+                      key={member}
+                      label={member}
+                      onClick={() => {
+                        setSelectedSplitters(prev => 
+                          prev.includes(member) ? prev.filter(m => m !== member) : [...prev, member]
+                        );
+                      }}
+                      sx={{
+                        background: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                        color: isSelected ? '#3B82F6' : '#94A3B8',
+                        border: `1px solid ${isSelected ? '#3B82F6' : '#334155'}`,
+                        borderRadius: '9999px',
+                        padding: '4px 12px',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          background: isSelected ? 'rgba(59, 130, 246, 0.3)' : 'rgba(51, 65, 85, 0.5)'
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+              {selectedSplitters.length > 0 && amountStr && !isNaN(parseFloat(amountStr)) && (
+                <Typography sx={{ mt: 2, color: '#3B82F6', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.9rem', animation: 'slideDown 0.3s ease' }}>
+                  (Split {selectedSplitters.length} ways: ₹{Math.round(parseFloat(amountStr) / selectedSplitters.length)} per person)
+                </Typography>
+              )}
+            </Box>
+          )}
 
           <FormControlLabel
             control={
