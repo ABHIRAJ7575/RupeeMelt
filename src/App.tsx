@@ -100,7 +100,7 @@ const eliteTheme = createTheme({
 export default function App() {
   const [isEliteVault, setIsEliteVault] = useState(false);
   const [tripMembers, setTripMembers] = useState<string[]>(() => JSON.parse(localStorage.getItem('elite_roster') || '[]'));
-  
+
   const currentRoomId = isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger';
   const [isIncognito, setIsIncognito] = useState(() => {
     return localStorage.getItem('rupeeMelt_incognito') === 'true';
@@ -225,7 +225,7 @@ export default function App() {
     }
   };
 
-  const fetchTransactions = async (activeRoomId: string) => {
+  const fetchTransactions = async () => {
     // 1. Clear existing UI state instantly
     setTransactions([]);
 
@@ -251,10 +251,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    const activeRoom = isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger';
-    fetchTransactions(activeRoom);
+    fetchTransactions();
   }, [isEliteVault]);
-  
+
   // Save trip members when changed
   useEffect(() => {
     localStorage.setItem('elite_roster', JSON.stringify(tripMembers));
@@ -299,7 +298,7 @@ export default function App() {
       return;
     }
 
-    await fetchTransactions(currentRoomId);
+    await fetchTransactions();
 
     if (type === 'inflow') {
       playCoinSound();
@@ -334,7 +333,7 @@ export default function App() {
       if (error) {
         console.error('Error wiping ledger:', error);
       } else {
-        fetchTransactions(currentRoomId);
+        fetchTransactions();
       }
     } catch (error) {
       console.error('Error wiping ledger:', error);
@@ -351,388 +350,405 @@ export default function App() {
 
         <Container maxWidth={false} sx={{ maxWidth: 'var(--app-max-width)', py: 'clamp(2rem, 4cqi, 4rem)', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 'clamp(2rem, 4cqi, 4rem)', position: 'relative', zIndex: 10 }}>
           {/* Header Pipeline */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textAlign: 'center' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-            {/* LEFT: Massive Logo */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              filter: 'drop-shadow(0 0 15px rgba(245, 158, 11, 0.4))' 
-            }}>
-              <Typography
-                component="span"
-                sx={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: '5rem',
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textAlign: 'center' }}>
+            <Box sx={{ width: '100%', maxWidth: '100%', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxSizing: 'border-box' }}>
+              {/* LEFT: Massive Logo */}
+              <Box sx={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                filter: 'drop-shadow(0 0 15px rgba(245, 158, 11, 0.4))'
+              }}>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontSize: '5rem',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    lineHeight: 0.8,
+                    flexShrink: 0
+                  }}
+                >
+                  ₹
+                </Typography>
+              </Box>
+
+              {/* RIGHT: Text Stack */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', flex: 1, minWidth: 0 }}>
+                <Typography sx={{
                   fontWeight: 800,
-                  background: 'linear-gradient(135deg, #FACC15, #F59E0B)',
+                  fontSize: 'clamp(0.45rem, 2.5vw, 0.7rem)',
+                  lineHeight: 1.3,
+                  width: '100%',
+                  whiteSpace: 'normal',
+                  overflowWrap: 'break-word',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  background: 'linear-gradient(135deg, #F6D365 0%, #FDA085 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  lineHeight: 0.8,
-                  flexShrink: 0
-                }}
-              >
-                ₹
-              </Typography>
-            </Box>
-
-            {/* RIGHT: Text Stack */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
-              <Typography sx={{
-                fontWeight: 800,
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                background: 'linear-gradient(135deg, #F6D365 0%, #FDA085 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                color: 'transparent',
-                zIndex: 100,
-                marginBottom: '2px'
-              }}>
-                Only for personal use of Abhiraj Dixit
-              </Typography>
-
-              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF', display: 'flex', alignItems: 'center' }}>
-                RupeeMelt
-                <span style={{ 
-                  fontFamily: 'JetBrains Mono, monospace', 
-                  fontSize: '0.65rem', 
-                  fontWeight: '600', 
-                  color: isEliteVault ? '#FACC15' : '#94A3B8', 
-                  backgroundColor: 'rgba(30, 38, 56, 0.4)', 
-                  border: `1px solid ${isEliteVault ? 'rgba(250, 204, 21, 0.3)' : '#334155'}`, 
-                  borderRadius: '9999px', 
-                  padding: '2px 8px', 
-                  marginLeft: '8px', 
-                  letterSpacing: '1px', 
-                  verticalAlign: 'middle' 
-                }}>V5.0</span>
-              </Typography>
-              
-              {isEliteVault ? (
-                <div style={{ display: 'inline-block', marginTop: '4px', padding: '4px 12px', border: '1px solid rgba(250, 204, 21, 0.3)', borderRadius: '9999px', background: 'rgba(250, 204, 21, 0.05)', boxShadow: '0 0 12px rgba(250, 204, 21, 0.1)' }}>
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', fontWeight: '600', color: '#FACC15', letterSpacing: '0.15em' }}>ELITE TRIP VAULT : ACTIVE</span>
-                </div>
-              ) : (
-                <p style={{ color: '#94A3B8', fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '4px', marginBottom: 0 }}>ABHIRAJ'S TRANSACTION LEDGER</p>
-              )}
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', mt: 3, mb: 1 }}>
-            <Button
-              variant={isEliteVault ? "contained" : "outlined"}
-              sx={{
-                color: isEliteVault ? '#0B0E14' : '#F59E0B',
-                background: isEliteVault ? '#F59E0B' : 'transparent',
-                borderColor: '#F59E0B',
-                fontWeight: 800,
-                '&:hover': { background: isEliteVault ? '#D97706' : 'rgba(245, 158, 11, 0.1)' }
-              }}
-              onClick={() => setIsEliteVault(!isEliteVault)}
-              startIcon={<AutoAwesomeIcon />}
-            >
-              {isEliteVault ? 'Exit Vault' : 'Elite Expenses'}
-            </Button>
-            <Button
-              variant="contained"
-              color="secondary"
-              startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              onClick={toggleIncognito}
-            >
-              {isIncognito ? 'Reveal' : 'Incognito'}
-            </Button>
-            <Button variant="outlined" color="primary" startIcon={<PictureAsPdfIcon />} onClick={handleExport}>
-              Export PDF
-            </Button>
-            <Button variant="outlined" color="error" startIcon={<DeleteForeverIcon />} onClick={() => setResetStage(1)}>
-              Reset Ledger
-            </Button>
-          </Box>
-        </Box>
-
-        {/* Top Metrics Section (4-Card Grid) */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
-          <MetallicCard sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            height: '100%',
-            background: '#141923',
-            border: '1px solid #1E2638',
-            borderRadius: '16px',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              borderColor: 'rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
-              transform: 'translateY(-4px)'
-            }
-          }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                Total Net Balance
-              </Typography>
-              <AccountBalanceWalletIcon sx={{ color: '#94A3B8' }} />
-            </Box>
-            <Typography
-              variant="h2"
-              className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
-            >
-              <Odometer amount={totalNetBalancePaisa} />
-            </Typography>
-          </MetallicCard>
-
-          <MetallicCard sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            height: '100%',
-            background: '#141923',
-            border: '1px solid #1E2638',
-            borderRadius: '16px',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              borderColor: 'rgba(16, 185, 129, 0.5)',
-              boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.15)',
-              transform: 'translateY(-4px)'
-            }
-          }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                Total Inflows
-              </Typography>
-              <TrendingUpIcon sx={{ color: '#10B981' }} />
-            </Box>
-            <Typography
-              variant="h2"
-              className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: isEliteVault ? '#3B82F6' : '#10B981' }}
-            >
-              <Odometer amount={totalInflowPaisa} />
-            </Typography>
-          </MetallicCard>
-
-          <MetallicCard sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            height: '100%',
-            background: '#141923',
-            border: '1px solid #1E2638',
-            borderRadius: '16px',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              borderColor: 'rgba(244, 63, 94, 0.5)',
-              boxShadow: '0 10px 20px -5px rgba(244, 63, 94, 0.15)',
-              transform: 'translateY(-4px)'
-            }
-          }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                Total Expenses
-              </Typography>
-              <TrendingDownIcon sx={{ color: '#F43F5E' }} />
-            </Box>
-            <Typography
-              variant="h2"
-              className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F43F5E' }}
-            >
-              <Odometer amount={totalExpensesPaisa} />
-            </Typography>
-          </MetallicCard>
-
-          <MetallicCard sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            height: '100%',
-            background: '#141923',
-            border: '1px solid #1E2638',
-            borderRadius: '16px',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              borderColor: 'rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
-              transform: 'translateY(-4px)'
-            }
-          }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                Cash on Hand (Offline)
-              </Typography>
-              <PaymentsIcon sx={{ color: '#94A3B8' }} />
-            </Box>
-            <Typography
-              variant="h2"
-              className={isIncognito ? 'incognito-blur' : ''}
-              sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
-            >
-              <Odometer amount={cashOnHandPaisa} />
-            </Typography>
-          </MetallicCard>
-        </Box>
-
-        {/* Tableau-Grade Visual Analytics */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 3 }}>
-          <MetallicCard sx={{
-            p: 4,
-            height: 400,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            background: '#141923',
-            border: '1px solid #1E2638',
-            borderRadius: '16px',
-          }}>
-            <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-              Expenses Breakdown
-            </Typography>
-            {chartData.length > 0 ? (
-              <Box sx={{
-                flex: 1,
-                position: 'relative',
-                background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)',
-                borderRadius: '8px'
-              }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={110}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {chartData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#141923', border: '1px solid #1E2638', borderRadius: '8px' }}
-                      itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
-                      formatter={(value: any) => ['₹' + Number(value).toLocaleString('en-IN'), 'Amount']}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)', borderRadius: '8px' }}>
-                <Typography variant="subtitle1" color="text.secondary">No expenses recorded yet.</Typography>
-              </Box>
-            )}
-          </MetallicCard>
-        </Box>
-
-        {/* Central Transaction Console & Live Feed */}
-        <Box className="dashboard-grid">
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 3cqi, 3rem)' }}>
-            <FinancialEngine 
-              onRecordTransaction={handleRecordTransaction} 
-              isEliteVault={isEliteVault}
-              tripMembers={tripMembers}
-              setTripMembers={setTripMembers}
-            />
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              Recent Transactions
-            </Typography>
-            <Box sx={{ 
-              backgroundColor: '#141923', 
-              border: '1px solid #1E2638', 
-              borderRadius: '16px', 
-              maxHeight: '400px', 
-              overflowY: 'auto',
-              '&::-webkit-scrollbar': { width: '6px' },
-              '&::-webkit-scrollbar-track': { background: 'transparent' },
-              '&::-webkit-scrollbar-thumb': { background: '#1E2638', borderRadius: '4px' }
-            }}>
-              {transactions.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(tx => {
-                const isHighlighted = tx.description?.includes('[HIGHLIGHT]');
-                const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').replace('[ELITE]', '').trim();
-                
-                return (
-                <Box key={tx.id} sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  padding: '12px 16px', 
-                  borderBottom: '1px solid rgba(30, 38, 56, 0.5)',
-                  background: isHighlighted ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, transparent 100%)' : 'transparent',
-                  borderLeft: isHighlighted ? '3px solid #FACC15' : 'none',
-                  '&:last-child': { borderBottom: 'none' }
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  zIndex: 100,
+                  marginBottom: '2px'
                 }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#F8FAFC', fontWeight: 600 }}>
-                      {tx.category} {displayDescription ? `- ${displayDescription}` : ''}
-                    </Typography>
-                    <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#64748B', fontSize: '0.75rem' }}>
-                      {new Date(tx.created_at).toLocaleDateString()} • {tx.payment_method}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography sx={{ 
-                      fontFamily: "'JetBrains Mono', monospace", 
-                      fontWeight: 700, 
-                      color: tx.transaction_direction === 'inflow' ? (isEliteVault ? '#3B82F6' : '#10B981') : '#F43F5E' 
-                    }}>
-                      {tx.transaction_direction === 'inflow' ? '+' : '-'}₹{(tx.amount_paisa / 100).toLocaleString('en-IN')}
-                    </Typography>
-                    <button 
-                      onClick={() => handleDeleteTransaction(tx.id)}
-                      style={{ 
-                        background: 'transparent', 
-                        border: 'none', 
-                        color: '#475569', 
-                        padding: '8px', 
-                        cursor: 'pointer', 
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.color = '#F43F5E';
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                        e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
-                        e.currentTarget.style.borderRadius = '8px';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.color = '#475569';
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
-                  </Box>
-                </Box>
-              )})}
-              {transactions.length === 0 && (
-                <Box sx={{ p: 4, textAlign: 'center' }}>
-                  <Typography sx={{ color: '#64748B' }}>No recent transactions.</Typography>
-                </Box>
-              )}
+                  Only for personal use of Abhiraj Dixit
+                </Typography>
+
+                <Typography variant="h3" sx={{
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  fontSize: 'clamp(1.8rem, 8vw, 3rem)',
+                  lineHeight: 1,
+                  margin: '2px 0'
+                }}>
+                  RupeeMelt
+                  <span style={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '0.65rem',
+                    fontWeight: '600',
+                    color: isEliteVault ? '#FACC15' : '#94A3B8',
+                    backgroundColor: 'rgba(30, 38, 56, 0.4)',
+                    border: `1px solid ${isEliteVault ? 'rgba(250, 204, 21, 0.3)' : '#334155'}`,
+                    borderRadius: '9999px',
+                    padding: '2px 8px',
+                    letterSpacing: '1px',
+                    verticalAlign: 'middle'
+                  }}>V5.1</span>
+                </Typography>
+
+                {isEliteVault ? (
+                  <div style={{ display: 'inline-block', marginTop: '4px', padding: '4px 12px', border: '1px solid rgba(250, 204, 21, 0.3)', borderRadius: '9999px', background: 'rgba(250, 204, 21, 0.05)', boxShadow: '0 0 12px rgba(250, 204, 21, 0.1)' }}>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', fontWeight: '600', color: '#FACC15', letterSpacing: '0.15em' }}>ELITE TRIP VAULT : ACTIVE</span>
+                  </div>
+                ) : (
+                  <p style={{ color: '#94A3B8', fontSize: 'clamp(0.45rem, 2.5vw, 0.7rem)', lineHeight: 1.3, width: '100%', whiteSpace: 'normal', overflowWrap: 'break-word', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '4px', marginBottom: 0 }}>ABHIRAJ'S TRANSACTION LEDGER</p>
+                )}
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', mt: 3, mb: 1 }}>
+              <Button
+                variant={isEliteVault ? "contained" : "outlined"}
+                sx={{
+                  color: isEliteVault ? '#0B0E14' : '#F59E0B',
+                  background: isEliteVault ? '#F59E0B' : 'transparent',
+                  borderColor: '#F59E0B',
+                  fontWeight: 800,
+                  '&:hover': { background: isEliteVault ? '#D97706' : 'rgba(245, 158, 11, 0.1)' }
+                }}
+                onClick={() => setIsEliteVault(!isEliteVault)}
+                startIcon={<AutoAwesomeIcon />}
+              >
+                {isEliteVault ? 'Exit Vault' : 'Elite Expenses'}
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                onClick={toggleIncognito}
+              >
+                {isIncognito ? 'Reveal' : 'Incognito'}
+              </Button>
+              <Button variant="outlined" color="primary" startIcon={<PictureAsPdfIcon />} onClick={handleExport}>
+                Export PDF
+              </Button>
+              <Button variant="outlined" color="error" startIcon={<DeleteForeverIcon />} onClick={() => setResetStage(1)}>
+                Reset Ledger
+              </Button>
             </Box>
           </Box>
-        </Box>
-      </Container>
+
+          {/* Top Metrics Section (4-Card Grid) */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+            <MetallicCard sx={{
+              p: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              height: '100%',
+              background: '#141923',
+              border: '1px solid #1E2638',
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                  Total Net Balance
+                </Typography>
+                <AccountBalanceWalletIcon sx={{ color: '#94A3B8' }} />
+              </Box>
+              <Typography
+                variant="h2"
+                className={isIncognito ? 'incognito-blur' : ''}
+                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
+              >
+                <Odometer amount={totalNetBalancePaisa} />
+              </Typography>
+            </MetallicCard>
+
+            <MetallicCard sx={{
+              p: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              height: '100%',
+              background: '#141923',
+              border: '1px solid #1E2638',
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: 'rgba(16, 185, 129, 0.5)',
+                boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.15)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                  Total Inflows
+                </Typography>
+                <TrendingUpIcon sx={{ color: '#10B981' }} />
+              </Box>
+              <Typography
+                variant="h2"
+                className={isIncognito ? 'incognito-blur' : ''}
+                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: isEliteVault ? '#3B82F6' : '#10B981' }}
+              >
+                <Odometer amount={totalInflowPaisa} />
+              </Typography>
+            </MetallicCard>
+
+            <MetallicCard sx={{
+              p: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              height: '100%',
+              background: '#141923',
+              border: '1px solid #1E2638',
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: 'rgba(244, 63, 94, 0.5)',
+                boxShadow: '0 10px 20px -5px rgba(244, 63, 94, 0.15)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                  Total Expenses
+                </Typography>
+                <TrendingDownIcon sx={{ color: '#F43F5E' }} />
+              </Box>
+              <Typography
+                variant="h2"
+                className={isIncognito ? 'incognito-blur' : ''}
+                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F43F5E' }}
+              >
+                <Odometer amount={totalExpensesPaisa} />
+              </Typography>
+            </MetallicCard>
+
+            <MetallicCard sx={{
+              p: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              height: '100%',
+              background: '#141923',
+              border: '1px solid #1E2638',
+              borderRadius: '16px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
+                transform: 'translateY(-4px)'
+              }
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                  Cash on Hand (Offline)
+                </Typography>
+                <PaymentsIcon sx={{ color: '#94A3B8' }} />
+              </Box>
+              <Typography
+                variant="h2"
+                className={isIncognito ? 'incognito-blur' : ''}
+                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
+              >
+                <Odometer amount={cashOnHandPaisa} />
+              </Typography>
+            </MetallicCard>
+          </Box>
+
+          {/* Tableau-Grade Visual Analytics */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 3 }}>
+            <MetallicCard sx={{
+              p: 4,
+              height: 400,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              background: '#141923',
+              border: '1px solid #1E2638',
+              borderRadius: '16px',
+            }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                Expenses Breakdown
+              </Typography>
+              {chartData.length > 0 ? (
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)',
+                  borderRadius: '8px'
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={110}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {chartData.map((_entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#141923', border: '1px solid #1E2638', borderRadius: '8px' }}
+                        itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
+                        formatter={(value: any) => ['₹' + Number(value).toLocaleString('en-IN'), 'Amount']}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)', borderRadius: '8px' }}>
+                  <Typography variant="subtitle1" color="text.secondary">No expenses recorded yet.</Typography>
+                </Box>
+              )}
+            </MetallicCard>
+          </Box>
+
+          {/* Central Transaction Console & Live Feed */}
+          <Box className="dashboard-grid">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 3cqi, 3rem)' }}>
+              <FinancialEngine
+                onRecordTransaction={handleRecordTransaction}
+                isEliteVault={isEliteVault}
+                tripMembers={tripMembers}
+                setTripMembers={setTripMembers}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                Recent Transactions
+              </Typography>
+              <Box sx={{
+                backgroundColor: '#141923',
+                border: '1px solid #1E2638',
+                borderRadius: '16px',
+                maxHeight: '400px',
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': { width: '6px' },
+                '&::-webkit-scrollbar-track': { background: 'transparent' },
+                '&::-webkit-scrollbar-thumb': { background: '#1E2638', borderRadius: '4px' }
+              }}>
+                {transactions.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(tx => {
+                  const isHighlighted = tx.description?.includes('[HIGHLIGHT]');
+                  const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').replace('[ELITE]', '').trim();
+
+                  return (
+                    <Box key={tx.id} sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(30, 38, 56, 0.5)',
+                      background: isHighlighted ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, transparent 100%)' : 'transparent',
+                      borderLeft: isHighlighted ? '3px solid #FACC15' : 'none',
+                      '&:last-child': { borderBottom: 'none' }
+                    }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#F8FAFC', fontWeight: 600 }}>
+                          {tx.category} {displayDescription ? `- ${displayDescription}` : ''}
+                        </Typography>
+                        <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#64748B', fontSize: '0.75rem' }}>
+                          {new Date(tx.created_at).toLocaleDateString()} • {tx.payment_method}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography sx={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontWeight: 700,
+                          color: tx.transaction_direction === 'inflow' ? (isEliteVault ? '#3B82F6' : '#10B981') : '#F43F5E'
+                        }}>
+                          {tx.transaction_direction === 'inflow' ? '+' : '-'}₹{(tx.amount_paisa / 100).toLocaleString('en-IN')}
+                        </Typography>
+                        <button
+                          onClick={() => handleDeleteTransaction(tx.id)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#475569',
+                            padding: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.color = '#F43F5E';
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                            e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
+                            e.currentTarget.style.borderRadius = '8px';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.color = '#475569';
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                        </button>
+                      </Box>
+                    </Box>
+                  )
+                })}
+                {transactions.length === 0 && (
+                  <Box sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography sx={{ color: '#64748B' }}>No recent transactions.</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        </Container>
       </Box>
 
       {/* Reset Ledger Modals */}
@@ -851,7 +867,7 @@ export default function App() {
                 </Document>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 16px', color: '#94A3B8', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.85rem', backgroundColor: '#0B0E14', borderTop: '1px solid #1E2638' }}>
-                <button 
+                <button
                   onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
                   disabled={pageNumber === 1}
                   style={{ background: '#1E2638', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px', padding: '6px 12px', cursor: pageNumber === 1 ? 'default' : 'pointer', transition: 'all 0.2s', opacity: pageNumber === 1 ? 0.5 : 1, pointerEvents: pageNumber === 1 ? 'none' : 'auto' }}
@@ -859,7 +875,7 @@ export default function App() {
                   Previous
                 </button>
                 <span>Page {pageNumber} of {numPages || '--'}</span>
-                <button 
+                <button
                   onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages || 1))}
                   disabled={pageNumber === numPages}
                   style={{ background: '#1E2638', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px', padding: '6px 12px', cursor: pageNumber === numPages ? 'default' : 'pointer', transition: 'all 0.2s', opacity: pageNumber === numPages ? 0.5 : 1, pointerEvents: pageNumber === numPages ? 'none' : 'auto' }}
