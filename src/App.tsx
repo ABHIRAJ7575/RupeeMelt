@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import LockIcon from '@mui/icons-material/Lock';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -102,7 +103,14 @@ const eliteTheme = createTheme({
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [isAppUnlocked, setIsAppUnlocked] = useState(false);
+  const [isAppUnlocked, setIsAppUnlocked] = useState(() => {
+    return sessionStorage.getItem('vault_unlocked') === 'true';
+  });
+
+  const handleSuccessfulUnlock = () => {
+    sessionStorage.setItem('vault_unlocked', 'true');
+    setIsAppUnlocked(true);
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -416,7 +424,7 @@ export default function App() {
   }
 
   if (!isAppUnlocked) {
-    return <AppLock onUnlock={() => setIsAppUnlocked(true)} />;
+    return <AppLock onUnlock={handleSuccessfulUnlock} />;
   }
 
   return (
@@ -554,6 +562,30 @@ export default function App() {
                 onClick={toggleIncognito}
               >
                 {isIncognito ? 'Reveal' : 'Incognito'}
+              </Button>
+              <Button
+                sx={{
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 16px',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '8px',
+                  color: '#94A3B8',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    borderColor: 'rgba(148, 163, 184, 0.5)',
+                    boxShadow: '0 0 12px rgba(148, 163, 184, 0.2)'
+                  }
+                }}
+                startIcon={<LockIcon />}
+                onClick={() => {
+                  sessionStorage.removeItem('vault_unlocked');
+                  setIsAppUnlocked(false);
+                }}
+              >
+                Lock Vault
               </Button>
               <Button
                 sx={{
