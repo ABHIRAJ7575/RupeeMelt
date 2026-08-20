@@ -213,8 +213,8 @@ export function AppLock({ onUnlock }: AppLockProps) {
 
         {/* Biometric Button */}
         <Button
-          onClick={handleBiometricAuth}
-          startIcon={<FingerprintIcon />}
+
+
           fullWidth
           sx={{
             mt: 3,
@@ -232,7 +232,7 @@ export function AppLock({ onUnlock }: AppLockProps) {
             }
           }}
         >
-          USE BIOMETRICS
+          Abhiraj Dixit
         </Button>
       </Box>
     </Box>
