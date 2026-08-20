@@ -32,7 +32,8 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   const totalCreditFormatted = totalCredit.toLocaleString('en-IN');
 
   // Table Data
-  const tableData = transactions.map((item, index) => {
+  const chronologicalTransactions = [...transactions].reverse();
+  const tableData = chronologicalTransactions.map((item, index) => {
     let modeText = item.payment_method === 'online' ? 'Online' : 'Cash';
     const amountStr = (item.amount_paisa / 100).toLocaleString('en-IN');
     

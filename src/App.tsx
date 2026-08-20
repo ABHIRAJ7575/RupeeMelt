@@ -10,6 +10,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import type { Session } from '@supabase/supabase-js';
 
 import { MetallicCard } from './components/ui/MetallicCard';
 import Odometer from './components/ui/Odometer';
@@ -19,6 +20,8 @@ import { generateLedgerReport } from './lib/pdfGenerator';
 import { supabase } from './lib/supabase';
 import type { LedgerTransaction } from './lib/supabase';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { MasterLogin } from './components/MasterLogin';
+import { AppLock } from './components/AppLock';
 
 // Connect the PDF.js worker via external CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -98,6 +101,23 @@ const eliteTheme = createTheme({
 });
 
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAppUnlocked, setIsAppUnlocked] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const [isEliteVault, setIsEliteVault] = useState(false);
   const [tripMembers, setTripMembers] = useState<string[]>(() => JSON.parse(localStorage.getItem('elite_roster') || '[]'));
 
@@ -140,6 +160,53 @@ export default function App() {
   const [pdfSaveFn, setPdfSaveFn] = useState<(() => void) | null>(null);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
+
+  // ATM Withdrawal State
+  const [atmModalOpen, setAtmModalOpen] = useState(false);
+  const [atmAmount, setAtmAmount] = useState('');
+
+  const handleAtmWithdrawal = async () => {
+    const parsedAmount = parseFloat(atmAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+
+    const amountPaisa = Math.round(parsedAmount * 100);
+
+    try {
+      // 1. Debit Online (Decreases Total Net Balance initially)
+      const debitTx = {
+        user_id: session?.user?.id,
+        amount_paisa: amountPaisa,
+        transaction_direction: 'outflow',
+        payment_method: 'online',
+        category: 'Internal Transfer',
+        description: 'ATM Withdrawal Debit'
+      };
+
+      // 2. Credit Offline (Restores Total Net Balance, increases Cash on Hand)
+      const creditTx = {
+        user_id: session?.user?.id,
+        amount_paisa: amountPaisa,
+        transaction_direction: 'inflow',
+        payment_method: 'offline',
+        category: 'Internal Transfer',
+        description: 'ATM Withdrawal Credit'
+      };
+
+      // Push both to Supabase
+      const { error } = await supabase.from('user_ledger').insert([debitTx, creditTx]);
+
+      if (error) {
+        console.error('Error during ATM withdrawal:', error);
+      } else {
+        setAtmModalOpen(false);
+        setAtmAmount('');
+        playCoinSound();
+        fetchTransactions();
+      }
+    } catch (err) {
+      console.error('Exception during ATM withdrawal:', err);
+    }
+  };
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -282,6 +349,7 @@ export default function App() {
       }
 
       const { error } = await supabase.from('user_ledger').insert({
+        user_id: session?.user?.id,
         amount_paisa: amountPaisa,
         transaction_direction: type,
         payment_method: paymentMethod,
@@ -342,6 +410,14 @@ export default function App() {
   };
 
   console.log("🔥 RENDER CYCLE -> Vault:", isEliteVault ? "ELITE TRIP" : "PERSONAL", "| Active Room ID:", isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger');
+
+  if (!session) {
+    return <MasterLogin />;
+  }
+
+  if (!isAppUnlocked) {
+    return <AppLock onUnlock={() => setIsAppUnlocked(true)} />;
+  }
 
   return (
     <ThemeProvider theme={isEliteVault ? eliteTheme : darkTheme}>
@@ -423,7 +499,7 @@ export default function App() {
                     padding: '2px 8px',
                     letterSpacing: '1px',
                     verticalAlign: 'middle'
-                  }}>V5.1</span>
+                  }}>V5.2</span>
                 </Typography>
 
                 {isEliteVault ? (
@@ -436,15 +512,22 @@ export default function App() {
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', mt: 3, mb: 1 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', mt: 3, mb: 1, position: 'relative', zIndex: 20, background: 'rgba(20, 25, 35, 0.6)', backdropFilter: 'blur(8px)', p: 2, borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <Button
-                variant={isEliteVault ? "contained" : "outlined"}
                 sx={{
-                  color: isEliteVault ? '#0B0E14' : '#F59E0B',
-                  background: isEliteVault ? '#F59E0B' : 'transparent',
-                  borderColor: '#F59E0B',
-                  fontWeight: 800,
-                  '&:hover': { background: isEliteVault ? '#D97706' : 'rgba(245, 158, 11, 0.1)' }
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 16px',
+                  border: isEliteVault ? '1px solid rgba(250, 204, 21, 0.8)' : '1px solid rgba(250, 204, 21, 0.3)',
+                  borderRadius: '8px',
+                  color: '#FACC15',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  boxShadow: isEliteVault ? '0 0 12px rgba(250, 204, 21, 0.3)' : 'none',
+                  '&:hover': {
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    boxShadow: '0 0 12px rgba(250, 204, 21, 0.5)'
+                  }
                 }}
                 onClick={() => setIsEliteVault(!isEliteVault)}
                 startIcon={<AutoAwesomeIcon />}
@@ -452,17 +535,86 @@ export default function App() {
                 {isEliteVault ? 'Exit Vault' : 'Elite Expenses'}
               </Button>
               <Button
-                variant="contained"
-                color="secondary"
+                sx={{
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 16px',
+                  border: isIncognito ? '1px solid rgba(6, 182, 212, 0.8)' : '1px solid rgba(6, 182, 212, 0.3)',
+                  borderRadius: '8px',
+                  color: '#06B6D4',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  boxShadow: isIncognito ? '0 0 12px rgba(6, 182, 212, 0.3)' : 'none',
+                  '&:hover': {
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    boxShadow: '0 0 12px rgba(6, 182, 212, 0.5)'
+                  }
+                }}
                 startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
                 onClick={toggleIncognito}
               >
                 {isIncognito ? 'Reveal' : 'Incognito'}
               </Button>
-              <Button variant="outlined" color="primary" startIcon={<PictureAsPdfIcon />} onClick={handleExport}>
+              <Button
+                sx={{
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 16px',
+                  border: '1px solid rgba(16, 185, 129, 0.5)',
+                  borderRadius: '8px',
+                  color: '#10B981',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)'
+                  }
+                }}
+                startIcon={<PaymentsIcon />}
+                onClick={() => setAtmModalOpen(true)}
+              >
+                Convert to Cash
+              </Button>
+              <Button
+                sx={{
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 16px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  color: '#F8FAFC',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 0 12px rgba(255, 255, 255, 0.2)'
+                  }
+                }}
+                startIcon={<PictureAsPdfIcon />}
+                onClick={handleExport}
+              >
                 Export PDF
               </Button>
-              <Button variant="outlined" color="error" startIcon={<DeleteForeverIcon />} onClick={() => setResetStage(1)}>
+              <Button
+                sx={{
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 16px',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  borderRadius: '8px',
+                  color: '#F43F5E',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    borderColor: 'rgba(244, 63, 94, 0.5)',
+                    boxShadow: '0 0 12px rgba(244, 63, 94, 0.3)'
+                  }
+                }}
+                startIcon={<DeleteForeverIcon />}
+                onClick={() => setResetStage(1)}
+              >
                 Reset Ledger
               </Button>
             </Box>
@@ -619,18 +771,33 @@ export default function App() {
                 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
+                      <defs>
+                        {chartData.map((_, index) => {
+                          const baseColors = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
+                          const darkColors = ['#0891b2', '#7c3aed', '#e11d48', '#059669', '#d97706', '#2563eb'];
+                          const c1 = baseColors[index % baseColors.length];
+                          const c2 = darkColors[index % darkColors.length];
+                          return (
+                            <linearGradient key={`grad-${index}`} id={`color-${index}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={c1} stopOpacity={1} />
+                              <stop offset="100%" stopColor={c2} stopOpacity={0.8} />
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
                       <Pie
                         data={chartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={80}
-                        outerRadius={110}
-                        paddingAngle={5}
+                        innerRadius={95}
+                        outerRadius={105}
+                        paddingAngle={8}
+                        cornerRadius={4}
                         dataKey="value"
                         stroke="none"
                       >
                         {chartData.map((_entry, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={`url(#color-${index})`} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))' }} />
                         ))}
                       </Pie>
                       <Tooltip
@@ -638,7 +805,23 @@ export default function App() {
                         itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
                         formatter={(value: any) => ['₹' + Number(value).toLocaleString('en-IN'), 'Amount']}
                       />
-                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      <Legend 
+                        content={(props) => {
+                          const { payload } = props;
+                          return (
+                            <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 0 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '12px', fontFamily: "'Inter', 'Urbanist', sans-serif" }}>
+                              {
+                                payload?.map((entry: any, index: number) => (
+                                  <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 500 }}>
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[index % PIE_COLORS.length], boxShadow: `0 0 8px ${PIE_COLORS[index % PIE_COLORS.length]}` }} />
+                                    {entry.value}
+                                  </li>
+                                ))
+                              }
+                            </ul>
+                          );
+                        }} 
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </Box>
@@ -671,6 +854,7 @@ export default function App() {
                 borderRadius: '16px',
                 maxHeight: '400px',
                 overflowY: 'auto',
+                px: { xs: 2, sm: 3 },
                 '&::-webkit-scrollbar': { width: '6px' },
                 '&::-webkit-scrollbar-track': { background: 'transparent' },
                 '&::-webkit-scrollbar-thumb': { background: '#1E2638', borderRadius: '4px' }
@@ -702,7 +886,9 @@ export default function App() {
                         <Typography sx={{
                           fontFamily: "'JetBrains Mono', monospace",
                           fontWeight: 700,
-                          color: tx.transaction_direction === 'inflow' ? (isEliteVault ? '#3B82F6' : '#10B981') : '#F43F5E'
+                          color: tx.transaction_direction === 'inflow' 
+                            ? (isEliteVault && !tx.description?.includes('ATM Withdrawal') ? '#3B82F6' : '#10B981') 
+                            : '#F43F5E'
                         }}>
                           {tx.transaction_direction === 'inflow' ? '+' : '-'}₹{(tx.amount_paisa / 100).toLocaleString('en-IN')}
                         </Typography>
@@ -782,6 +968,84 @@ export default function App() {
         </DialogActions>
       </Dialog>
 
+      {/* ATM Withdrawal Modal */}
+      <Dialog
+        open={atmModalOpen}
+        onClose={() => setAtmModalOpen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            background: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(8px)',
+            willChange: 'transform, opacity',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            borderRadius: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            width: '100%',
+            maxWidth: '400px'
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: '#10B981', fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textAlign: 'center', pt: 4 }}>
+          ATM WITHDRAWAL
+        </DialogTitle>
+        <DialogContent sx={{ px: 4, pb: 2 }}>
+          <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textAlign: 'center', mb: 3 }}>
+            Convert online funds to offline cash. This will execute a balancing transaction pair to keep your Net Balance intact while increasing Cash on Hand.
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Typography sx={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Amount (₹)</Typography>
+            <Box
+              component="input"
+              type="number"
+              value={atmAmount}
+              onChange={(e: any) => setAtmAmount(e.target.value)}
+              placeholder="0.00"
+              sx={{
+                width: '100%',
+                background: 'rgba(11, 14, 20, 0.6)',
+                border: '1px solid #1E2638',
+                borderRadius: '12px',
+                padding: '16px',
+                color: '#F8FAFC',
+                fontSize: '1.5rem',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: 700,
+                outline: 'none',
+                boxSizing: 'border-box',
+                '&:focus': {
+                  borderColor: '#10B981',
+                  boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)'
+                }
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 1, display: 'flex', gap: 2 }}>
+          <Button
+            onClick={() => setAtmModalOpen(false)}
+            sx={{ flex: 1, color: '#94A3B8', border: '1px solid #1E2638', '&:hover': { background: 'rgba(255,255,255,0.05)' } }}
+          >
+            CANCEL
+          </Button>
+          <Button
+            onClick={handleAtmWithdrawal}
+            disabled={!atmAmount || parseFloat(atmAmount) <= 0}
+            variant="contained"
+            sx={{
+              flex: 1,
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: '#fff',
+              fontWeight: 800,
+              '&:hover': { background: 'linear-gradient(135deg, #34D399 0%, #10B981 100%)' },
+              '&.Mui-disabled': { background: '#1E2638', color: '#64748B' }
+            }}
+          >
+            WITHDRAW
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {vfxMode === 'deposit' && (
         <Box sx={{
           position: 'fixed',
@@ -838,7 +1102,8 @@ export default function App() {
           zIndex: 1000,
           '& .MuiDialog-paper': {
             background: 'rgba(20, 25, 35, 0.95)',
-            backdropFilter: 'blur(16px)',
+            backdropFilter: 'blur(8px)',
+            willChange: 'transform, opacity',
             border: '1px solid #1E2638',
             borderRadius: '16px',
             overflow: 'hidden'

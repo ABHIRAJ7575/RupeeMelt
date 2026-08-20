@@ -76,7 +76,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
   };
 
   return (
-    <MetallicCard sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <MetallicCard sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 3, willChange: 'transform, opacity' }}>
       <Typography variant="h5" color="primary.main" sx={{ fontWeight: 700, mb: 1, display: formStep === 1 ? 'block' : 'none' }}>
         Ledger Engine
       </Typography>
@@ -94,7 +94,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             left: '50%',
             transform: 'translate(-50%, -50%)',
             background: 'rgba(20, 25, 35, 0.8)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(8px)',
             padding: '4px 12px',
             borderRadius: '16px',
             border: '1px solid rgba(255,255,255,0.1)',
@@ -122,20 +122,23 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             background: formStep === 2 && transactionType === 'inflow' 
               ? 'linear-gradient(180deg, rgba(16,185,129,0.15) 0%, rgba(20,25,35,0) 100%)' 
-              : '#141923',
+              : '#0f172a',
             color: '#10B981',
             border: formStep === 2 && transactionType === 'inflow' 
               ? '1px solid #10B981' 
               : '1px solid rgba(16, 185, 129, 0.3)',
             boxShadow: formStep === 2 && transactionType === 'inflow' 
               ? '0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 10px rgba(16, 185, 129, 0.1)' 
-              : 'none',
+              : 'inset 0 2px 4px rgba(255,255,255,0.05), 0 4px 6px rgba(0,0,0,0.3)',
             transform: formStep === 2 && transactionType === 'inflow' ? 'translateY(-2px)' : 'none',
             '&:hover': {
               background: 'linear-gradient(180deg, rgba(16,185,129,0.15) 0%, rgba(20,25,35,0) 100%)',
               border: '1px solid #10B981',
               boxShadow: '0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 10px rgba(16, 185, 129, 0.1)',
               transform: 'translateY(-2px)'
+            },
+            '&:active': {
+              transform: 'scale(0.98)',
             },
             ...(formStep === 2 && transactionType === 'outflow' ? { opacity: 0.5, filter: 'grayscale(1)' } : {})
           }}
@@ -158,20 +161,23 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             background: formStep === 2 && transactionType === 'outflow' 
               ? 'linear-gradient(180deg, rgba(244,63,94,0.15) 0%, rgba(20,25,35,0) 100%)' 
-              : '#141923',
+              : '#0f172a',
             color: '#F43F5E',
             border: formStep === 2 && transactionType === 'outflow' 
               ? '1px solid #F43F5E' 
               : '1px solid rgba(244, 63, 94, 0.3)',
             boxShadow: formStep === 2 && transactionType === 'outflow' 
               ? '0 0 20px rgba(244, 63, 94, 0.2), inset 0 0 10px rgba(244, 63, 94, 0.1)' 
-              : 'none',
+              : 'inset 0 2px 4px rgba(255,255,255,0.05), 0 4px 6px rgba(0,0,0,0.3)',
             transform: formStep === 2 && transactionType === 'outflow' ? 'translateY(-2px)' : 'none',
             '&:hover': {
               background: 'linear-gradient(180deg, rgba(244,63,94,0.15) 0%, rgba(20,25,35,0) 100%)',
               border: '1px solid #F43F5E',
               boxShadow: '0 0 20px rgba(244, 63, 94, 0.2), inset 0 0 10px rgba(244, 63, 94, 0.1)',
               transform: 'translateY(-2px)'
+            },
+            '&:active': {
+              transform: 'scale(0.98)',
             },
             ...(formStep === 2 && transactionType === 'inflow' ? { opacity: 0.5, filter: 'grayscale(1)' } : {})
           }}
