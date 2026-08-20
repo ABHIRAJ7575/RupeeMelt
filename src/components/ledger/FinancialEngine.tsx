@@ -22,18 +22,18 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
   const [category, setCategory] = useState('Others');
 
   const [isHighlight, setIsHighlight] = useState(false);
-  
+
   // Trip Splitter State
   const [newMemberName, setNewMemberName] = useState('');
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([]);
 
-  const currentCategories = isEliteVault 
+  const currentCategories = isEliteVault
     ? (transactionType === 'inflow' ? ['Trip Fund Collection', 'Refund', 'Others'] : ['Flight/Train', 'Hotel/Stay', 'Food & Drinks', 'Cab/Transport', 'Activities', 'Others'])
-    : (transactionType === 'inflow' ? ['Salary', 'Cashback', 'Others'] : ['Pulsar', 'Meteor 350', 'Outing', 'Fast-Food', 'Home Expenses', 'MBA', 'SIP', 'To Mummy', 'To Papa', 'Paying Loan', 'Cell Phone Recharge', 'Others']);
+    : (transactionType === 'inflow' ? ['Salary', 'Cashback', 'Cash into Bank', 'Others'] : ['Pulsar 150', 'Eco-Sport', 'Meteor 350', 'Outing', 'Fast-Food', 'Home Expenses', 'MBA', 'SIP', 'To Mummy', 'To Papa', 'Paying Loan', 'Cell Phone Recharge', 'Others']);
 
   React.useEffect(() => {
     if (transactionType === 'outflow') {
-      setCategory(isEliteVault ? 'Food & Drinks' : 'Pulsar');
+      setCategory(isEliteVault ? 'Food & Drinks' : 'Pulsar 150');
     } else {
       setCategory(isEliteVault ? 'Trip Fund Collection' : 'Salary');
     }
@@ -44,7 +44,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
     if (mode === 'inflow') {
       setCategory(isEliteVault ? 'Trip Fund Collection' : 'Salary');
     } else {
-      setCategory(isEliteVault ? 'Food & Drinks' : 'Pulsar');
+      setCategory(isEliteVault ? 'Food & Drinks' : 'Pulsar 150');
     }
     setFormStep(2);
   };
@@ -63,13 +63,13 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
     if (!isNaN(amount) && amount > 0) {
       const paisa = Math.round(amount * 100);
       let finalDescription = isHighlight ? description + (description ? ' ' : '') + '[HIGHLIGHT]' : description;
-      
+
       if (isEliteVault && selectedSplitters.length > 0) {
         const splitMath = Math.round(amount / selectedSplitters.length);
         const splitStr = `[Split: ${selectedSplitters.join(', ')}] (₹${splitMath} each)`;
         finalDescription = finalDescription ? `${finalDescription} | ${splitStr}` : splitStr;
       }
-      
+
       await onRecordTransaction(paisa, transactionType, paymentMethod, category, finalDescription);
       resetForm();
     }
@@ -81,11 +81,11 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
         Ledger Engine
       </Typography>
 
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
         gap: '16px',
-        position: 'relative' 
+        position: 'relative'
       }}>
         {formStep === 1 && (
           <Box sx={{
@@ -120,15 +120,15 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             textTransform: 'none',
             fontWeight: 700,
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            background: formStep === 2 && transactionType === 'inflow' 
-              ? 'linear-gradient(180deg, rgba(16,185,129,0.15) 0%, rgba(20,25,35,0) 100%)' 
+            background: formStep === 2 && transactionType === 'inflow'
+              ? 'linear-gradient(180deg, rgba(16,185,129,0.15) 0%, rgba(20,25,35,0) 100%)'
               : '#0f172a',
             color: '#10B981',
-            border: formStep === 2 && transactionType === 'inflow' 
-              ? '1px solid #10B981' 
+            border: formStep === 2 && transactionType === 'inflow'
+              ? '1px solid #10B981'
               : '1px solid rgba(16, 185, 129, 0.3)',
-            boxShadow: formStep === 2 && transactionType === 'inflow' 
-              ? '0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 10px rgba(16, 185, 129, 0.1)' 
+            boxShadow: formStep === 2 && transactionType === 'inflow'
+              ? '0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 10px rgba(16, 185, 129, 0.1)'
               : 'inset 0 2px 4px rgba(255,255,255,0.05), 0 4px 6px rgba(0,0,0,0.3)',
             transform: formStep === 2 && transactionType === 'inflow' ? 'translateY(-2px)' : 'none',
             '&:hover': {
@@ -159,15 +159,15 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             textTransform: 'none',
             fontWeight: 700,
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            background: formStep === 2 && transactionType === 'outflow' 
-              ? 'linear-gradient(180deg, rgba(244,63,94,0.15) 0%, rgba(20,25,35,0) 100%)' 
+            background: formStep === 2 && transactionType === 'outflow'
+              ? 'linear-gradient(180deg, rgba(244,63,94,0.15) 0%, rgba(20,25,35,0) 100%)'
               : '#0f172a',
             color: '#F43F5E',
-            border: formStep === 2 && transactionType === 'outflow' 
-              ? '1px solid #F43F5E' 
+            border: formStep === 2 && transactionType === 'outflow'
+              ? '1px solid #F43F5E'
               : '1px solid rgba(244, 63, 94, 0.3)',
-            boxShadow: formStep === 2 && transactionType === 'outflow' 
-              ? '0 0 20px rgba(244, 63, 94, 0.2), inset 0 0 10px rgba(244, 63, 94, 0.1)' 
+            boxShadow: formStep === 2 && transactionType === 'outflow'
+              ? '0 0 20px rgba(244, 63, 94, 0.2), inset 0 0 10px rgba(244, 63, 94, 0.1)'
               : 'inset 0 2px 4px rgba(255,255,255,0.05), 0 4px 6px rgba(0,0,0,0.3)',
             transform: formStep === 2 && transactionType === 'outflow' ? 'translateY(-2px)' : 'none',
             '&:hover': {
@@ -194,7 +194,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
             {tripMembers.map(member => (
-              <Chip 
+              <Chip
                 key={member}
                 label={member}
                 onDelete={() => {
@@ -202,9 +202,9 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                     setTripMembers(prev => prev.filter(m => m !== member));
                   }
                 }}
-                sx={{ 
-                  background: '#1E293B', 
-                  color: '#F8FAFC', 
+                sx={{
+                  background: '#1E293B',
+                  color: '#F8FAFC',
                   border: '1px solid #334155',
                   borderRadius: '9999px',
                   '& .MuiChip-deleteIcon': { color: '#64748B', '&:hover': { color: '#F43F5E' } }
@@ -213,7 +213,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             ))}
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField 
+            <TextField
               size="small"
               placeholder="Add Member (e.g. Rahul)"
               value={newMemberName}
@@ -224,9 +224,9 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                   setNewMemberName('');
                 }
               }}
-              sx={{ 
+              sx={{
                 flex: 1,
-                '& .MuiOutlinedInput-root': { 
+                '& .MuiOutlinedInput-root': {
                   color: '#F8FAFC',
                   borderRadius: '8px',
                   background: '#0F172A',
@@ -236,8 +236,8 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                 }
               }}
             />
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               onClick={() => {
                 if (newMemberName.trim() && setTripMembers && !tripMembers.includes(newMemberName.trim())) {
                   setTripMembers(prev => [...prev, newMemberName.trim()]);
@@ -321,8 +321,8 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             />
 
             <FormControl fullWidth sx={{
-                '& .MuiInputLabel-root': { color: '#94A3B8' },
-                '& .MuiInputLabel-root.Mui-focused': { color: transactionType === 'inflow' ? '#10B981' : '#F43F5E' },
+              '& .MuiInputLabel-root': { color: '#94A3B8' },
+              '& .MuiInputLabel-root.Mui-focused': { color: transactionType === 'inflow' ? '#10B981' : '#F43F5E' },
             }}>
               <InputLabel>Category</InputLabel>
               <Select
@@ -387,7 +387,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                       key={member}
                       label={member}
                       onClick={() => {
-                        setSelectedSplitters(prev => 
+                        setSelectedSplitters(prev =>
                           prev.includes(member) ? prev.filter(m => m !== member) : [...prev, member]
                         );
                       }}
@@ -416,8 +416,8 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
 
           <FormControlLabel
             control={
-              <Switch 
-                checked={isHighlight} 
+              <Switch
+                checked={isHighlight}
                 onChange={(e) => setIsHighlight(e.target.checked)}
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': {
@@ -450,14 +450,14 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
               fontSize: '1.1rem',
               color: '#fff',
               background: transactionType === 'inflow' ? '#10B981' : '#F43F5E',
-              boxShadow: transactionType === 'inflow' 
-                ? '0 4px 20px rgba(16, 185, 129, 0.4)' 
+              boxShadow: transactionType === 'inflow'
+                ? '0 4px 20px rgba(16, 185, 129, 0.4)'
                 : '0 4px 20px rgba(244, 63, 94, 0.4)',
               transition: 'all 0.3s ease',
               '&:hover': {
                 background: transactionType === 'inflow' ? '#059669' : '#E11D48',
-                boxShadow: transactionType === 'inflow' 
-                  ? '0 6px 24px rgba(16, 185, 129, 0.5)' 
+                boxShadow: transactionType === 'inflow'
+                  ? '0 6px 24px rgba(16, 185, 129, 0.5)'
                   : '0 6px 24px rgba(244, 63, 94, 0.5)',
               },
               '&:active': {
