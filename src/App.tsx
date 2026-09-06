@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Box, Container, Typography, Button, ThemeProvider, createTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -127,6 +127,7 @@ export default function App() {
   }, []);
 
   const [isEliteVault, setIsEliteVault] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<{ name: string; value: number } | null>(null);
   const [tripMembers, setTripMembers] = useState<string[]>(() => JSON.parse(localStorage.getItem('elite_roster') || '[]'));
 
   const currentRoomId = isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger';
@@ -327,6 +328,7 @@ export default function App() {
 
   useEffect(() => {
     fetchTransactions();
+    setActiveCategory(null);
   }, [isEliteVault]);
 
   // Save trip members when changed
@@ -343,10 +345,14 @@ export default function App() {
       return acc;
     }, {} as Record<string, number>);
 
-  const chartData = Object.keys(expensesByCategory).map(key => ({
-    name: key,
-    value: expensesByCategory[key]
-  }));
+  const chartData = Object.keys(expensesByCategory)
+    .map(key => ({
+      name: key,
+      value: expensesByCategory[key]
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const totalExpenseAmount = chartData.reduce((acc, curr) => acc + curr.value, 0);
   const PIE_COLORS = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
 
   const handleRecordTransaction = async (amountPaisa: number, type: 'inflow' | 'outflow', paymentMethod: 'online' | 'offline', category: string, desc: string) => {
@@ -795,70 +801,94 @@ export default function App() {
                 Expenses Breakdown
               </Typography>
               {chartData.length > 0 ? (
-                <Box sx={{
-                  flex: 1,
-                  position: 'relative',
-                  background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)',
-                  borderRadius: '8px'
-                }}>
+                <div
+                  className="relative w-full h-64 flex items-center justify-center"
+                  style={{ position: 'relative', width: '100%', height: '16rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <defs>
-                        {chartData.map((_, index) => {
-                          const baseColors = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
-                          const darkColors = ['#0891b2', '#7c3aed', '#e11d48', '#059669', '#d97706', '#2563eb'];
-                          const c1 = baseColors[index % baseColors.length];
-                          const c2 = darkColors[index % darkColors.length];
-                          return (
-                            <linearGradient key={`grad-${index}`} id={`color-${index}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={c1} stopOpacity={1} />
-                              <stop offset="100%" stopColor={c2} stopOpacity={0.8} />
-                            </linearGradient>
-                          );
-                        })}
-                      </defs>
                       <Pie
                         data={chartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={95}
-                        outerRadius={105}
-                        paddingAngle={8}
-                        cornerRadius={4}
+                        innerRadius="70%"
+                        outerRadius="90%"
                         dataKey="value"
-                        stroke="none"
+                        stroke="transparent"
+                        onClick={(entry: any) => {
+                          if (entry && entry.name) {
+                            setActiveCategory({ name: entry.name, value: Number(entry.value) });
+                          }
+                        }}
                       >
-                        {chartData.map((_entry, index) => (
-                          <Cell key={`cell-${index}`} fill={`url(#color-${index})`} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))' }} />
+                        {chartData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                            stroke="transparent"
+                            onClick={() => setActiveCategory(entry)}
+                            style={{ cursor: 'pointer', outline: 'none' }}
+                          />
                         ))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#141923', border: '1px solid #1E2638', borderRadius: '8px' }}
-                        itemStyle={{ color: '#F8FAFC', fontWeight: 600 }}
-                        formatter={(value: any) => ['₹' + Number(value).toLocaleString('en-IN'), 'Amount']}
-                      />
-                      <Legend 
-                        content={(props) => {
-                          const { payload } = props;
-                          return (
-                            <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 0 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '12px', fontFamily: "'Inter', 'Urbanist', sans-serif" }}>
-                              {
-                                payload?.map((entry: any, index: number) => (
-                                  <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', fontSize: '0.85rem', fontWeight: 500 }}>
-                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[index % PIE_COLORS.length], boxShadow: `0 0 8px ${PIE_COLORS[index % PIE_COLORS.length]}` }} />
-                                    {entry.value}
-                                  </li>
-                                ))
-                              }
-                            </ul>
-                          );
-                        }} 
-                      />
                     </PieChart>
                   </ResponsiveContainer>
-                </Box>
+
+                  {/* The Dynamic Hollow Center (Apple Card Style) */}
+                  <div
+                    className="absolute inset-0 m-auto flex flex-col items-center justify-center text-center select-none"
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      maxWidth: '120px',
+                      pointerEvents: activeCategory ? 'auto' : 'none',
+                      cursor: activeCategory ? 'pointer' : 'default'
+                    }}
+                    onClick={() => {
+                      if (activeCategory) setActiveCategory(null);
+                    }}
+                  >
+                    <span
+                      className="text-xs font-medium text-slate-400 max-w-[120px] truncate block tracking-wider uppercase"
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        color: '#94a3b8',
+                        maxWidth: '120px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: 'block',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}
+                      title={activeCategory ? activeCategory.name : 'Total'}
+                    >
+                      {activeCategory ? activeCategory.name : 'Total'}
+                    </span>
+                    <span
+                      className="text-xl sm:text-2xl font-bold text-white tracking-tight"
+                      style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        letterSpacing: '-0.025em',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      ₹{(activeCategory ? activeCategory.value : totalExpenseAmount).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)', borderRadius: '8px' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '16rem', background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)', borderRadius: '8px' }}>
                   <Typography variant="subtitle1" color="text.secondary">No expenses recorded yet.</Typography>
                 </Box>
               )}
