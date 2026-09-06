@@ -29,7 +29,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
 
   const currentCategories = isEliteVault
     ? (transactionType === 'inflow' ? ['Trip Fund Collection', 'Refund', 'Others'] : ['Flight/Train', 'Hotel/Stay', 'Food & Drinks', 'Cab/Transport', 'Activities', 'Others'])
-    : (transactionType === 'inflow' ? ['Salary', 'Cashback', 'Cash into Bank', 'Others'] : ['Pulsar 150', 'Eco-Sport', 'Meteor 350', 'Outing', 'Fast-Food', 'Home Expenses', 'MBA', 'SIP', 'To Mummy', 'To Papa', 'Paying Loan', 'Cell Phone Recharge', 'Others']);
+    : (transactionType === 'inflow' ? ['Salary', 'Cashback', 'Cash into Bank', 'Others'] : ['Pulsar 150', 'Eco-Sport', 'Meteor 350', 'Activa H-Smart', 'Family Food/Outing Expenses', 'Personal Outing', 'Personal Fast-Food', 'Home Expenses', 'Personal Shopping', 'Family Shopping', 'MBA', 'SIP', 'To Family', 'To Friends', 'To Parents', 'Paying Loan', 'Cell Phone Recharge', 'Others']);
 
   React.useEffect(() => {
     if (transactionType === 'outflow') {
