@@ -15,7 +15,6 @@ import type { Session } from '@supabase/supabase-js';
 
 import { MetallicCard } from './components/ui/MetallicCard';
 import Odometer from './components/ui/Odometer';
-import { ParticleEngine } from './components/ui/ParticleEngine';
 import { FinancialEngine } from './components/ledger/FinancialEngine';
 import { generateLedgerReport } from './lib/pdfGenerator';
 import { supabase } from './lib/supabase';
@@ -435,9 +434,16 @@ export default function App() {
 
   return (
     <ThemeProvider theme={isEliteVault ? eliteTheme : darkTheme}>
-      <Box sx={{ background: isEliteVault ? '#0A0F1C' : '#0B0E14', minHeight: '100vh', transition: 'background 0.5s ease', position: 'relative', overflowX: 'hidden' }}>
-        <ParticleEngine />
-
+      <Box
+        className="bg-[#090d16] min-h-screen text-slate-100"
+        sx={{
+          background: isEliteVault ? '#0A0F1C' : '#090d16',
+          minHeight: '100vh',
+          transition: 'background 0.5s ease',
+          position: 'relative',
+          overflowX: 'hidden'
+        }}
+      >
         <Container
           maxWidth={false}
           className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
