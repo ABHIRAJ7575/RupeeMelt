@@ -435,10 +435,26 @@ export default function App() {
 
   return (
     <ThemeProvider theme={isEliteVault ? eliteTheme : darkTheme}>
-      <Box sx={{ background: isEliteVault ? '#0A0F1C' : '#0B0E14', minHeight: '100vh', transition: 'background 0.5s ease', position: 'relative' }}>
+      <Box sx={{ background: isEliteVault ? '#0A0F1C' : '#0B0E14', minHeight: '100vh', transition: 'background 0.5s ease', position: 'relative', overflowX: 'hidden' }}>
         <ParticleEngine />
 
-        <Container maxWidth={false} sx={{ maxWidth: 'var(--app-max-width)', py: 'clamp(2rem, 4cqi, 4rem)', minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 'clamp(2rem, 4cqi, 4rem)', position: 'relative', zIndex: 10 }}>
+        <Container
+          maxWidth={false}
+          className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+          sx={{
+            width: '100%',
+            maxWidth: '72rem',
+            mx: 'auto',
+            px: { xs: 2, sm: 3, lg: 4 },
+            py: 3,
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'clamp(1.5rem, 3cqi, 3rem)',
+            position: 'relative',
+            zIndex: 10
+          }}
+        >
           {/* Header Pipeline */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textAlign: 'center' }}>
             <Box sx={{ width: '100%', maxWidth: '100%', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxSizing: 'border-box' }}>
@@ -659,9 +675,18 @@ export default function App() {
           </Box>
 
           {/* Top Metrics Section (4-Card Grid) */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+          <Box
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full mb-6"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+              gap: { xs: 1.5, sm: 2 },
+              width: '100%',
+              mb: 3
+            }}
+          >
             <MetallicCard sx={{
-              p: 4,
+              p: { xs: 2.5, sm: 3, md: 4 },
               display: 'flex',
               flexDirection: 'column',
               gap: 1,
@@ -676,15 +701,15 @@ export default function App() {
                 transform: 'translateY(-4px)'
               }
             }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
                   Total Net Balance
                 </Typography>
-                <AccountBalanceWalletIcon sx={{ color: '#94A3B8' }} />
+                <AccountBalanceWalletIcon sx={{ color: '#94A3B8', flexShrink: 0, ml: 1 }} />
               </Box>
               <Typography
                 variant="h2"
-                className={isIncognito ? 'incognito-blur' : ''}
+                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
                 sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
               >
                 <Odometer amount={totalNetBalancePaisa} />
@@ -692,7 +717,7 @@ export default function App() {
             </MetallicCard>
 
             <MetallicCard sx={{
-              p: 4,
+              p: { xs: 2.5, sm: 3, md: 4 },
               display: 'flex',
               flexDirection: 'column',
               gap: 1,
@@ -707,15 +732,15 @@ export default function App() {
                 transform: 'translateY(-4px)'
               }
             }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
                   Total Inflows
                 </Typography>
-                <TrendingUpIcon sx={{ color: '#10B981' }} />
+                <TrendingUpIcon sx={{ color: '#10B981', flexShrink: 0, ml: 1 }} />
               </Box>
               <Typography
                 variant="h2"
-                className={isIncognito ? 'incognito-blur' : ''}
+                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
                 sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: isEliteVault ? '#3B82F6' : '#10B981' }}
               >
                 <Odometer amount={totalInflowPaisa} />
@@ -723,7 +748,7 @@ export default function App() {
             </MetallicCard>
 
             <MetallicCard sx={{
-              p: 4,
+              p: { xs: 2.5, sm: 3, md: 4 },
               display: 'flex',
               flexDirection: 'column',
               gap: 1,
@@ -738,15 +763,15 @@ export default function App() {
                 transform: 'translateY(-4px)'
               }
             }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
                   Total Expenses
                 </Typography>
-                <TrendingDownIcon sx={{ color: '#F43F5E' }} />
+                <TrendingDownIcon sx={{ color: '#F43F5E', flexShrink: 0, ml: 1 }} />
               </Box>
               <Typography
                 variant="h2"
-                className={isIncognito ? 'incognito-blur' : ''}
+                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
                 sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F43F5E' }}
               >
                 <Odometer amount={totalExpensesPaisa} />
@@ -754,7 +779,7 @@ export default function App() {
             </MetallicCard>
 
             <MetallicCard sx={{
-              p: 4,
+              p: { xs: 2.5, sm: 3, md: 4 },
               display: 'flex',
               flexDirection: 'column',
               gap: 1,
@@ -769,15 +794,15 @@ export default function App() {
                 transform: 'translateY(-4px)'
               }
             }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
+                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
                   Cash on Hand (Offline)
                 </Typography>
-                <PaymentsIcon sx={{ color: '#94A3B8' }} />
+                <PaymentsIcon sx={{ color: '#94A3B8', flexShrink: 0, ml: 1 }} />
               </Box>
               <Typography
                 variant="h2"
-                className={isIncognito ? 'incognito-blur' : ''}
+                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
                 sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
               >
                 <Odometer amount={cashOnHandPaisa} />
@@ -896,8 +921,26 @@ export default function App() {
           </Box>
 
           {/* Central Transaction Console & Live Feed */}
-          <Box className="dashboard-grid">
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 3cqi, 3rem)' }}>
+          <Box
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full mt-6"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, 1fr)' },
+              gap: 3,
+              width: '100%',
+              mt: 3
+            }}
+          >
+            <Box
+              className="lg:col-span-1 w-full"
+              sx={{
+                gridColumn: { xs: 'span 1', lg: 'span 1' },
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2
+              }}
+            >
               <FinancialEngine
                 onRecordTransaction={handleRecordTransaction}
                 isEliteVault={isEliteVault}
@@ -906,7 +949,18 @@ export default function App() {
               />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box
+              className="lg:col-span-2 w-full min-w-0 overflow-hidden"
+              sx={{
+                gridColumn: { xs: 'span 1', lg: 'span 2' },
+                width: '100%',
+                minWidth: 0,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2
+              }}
+            >
               <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 Recent Transactions
               </Typography>
@@ -916,7 +970,7 @@ export default function App() {
                 borderRadius: '16px',
                 maxHeight: '400px',
                 overflowY: 'auto',
-                px: { xs: 2, sm: 3 },
+                p: { xs: 1.5, sm: 2 },
                 '&::-webkit-scrollbar': { width: '6px' },
                 '&::-webkit-scrollbar-track': { background: 'transparent' },
                 '&::-webkit-scrollbar-thumb': { background: '#1E2638', borderRadius: '4px' }
@@ -926,28 +980,61 @@ export default function App() {
                   const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').replace('[ELITE]', '').trim();
 
                   return (
-                    <Box key={tx.id} sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      borderBottom: '1px solid rgba(30, 38, 56, 0.5)',
-                      background: isHighlighted ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, transparent 100%)' : 'transparent',
-                      borderLeft: isHighlighted ? '3px solid #FACC15' : 'none',
-                      '&:last-child': { borderBottom: 'none' }
-                    }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#F8FAFC', fontWeight: 600 }}>
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between w-full p-3 mb-2 bg-slate-900/60 rounded-xl border border-slate-800"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        padding: '12px',
+                        marginBottom: '8px',
+                        borderRadius: '12px',
+                        backgroundColor: isHighlighted ? 'rgba(250, 204, 21, 0.08)' : 'rgba(15, 23, 42, 0.6)',
+                        border: isHighlighted ? '1px solid rgba(250, 204, 21, 0.4)' : '1px solid #1E2638',
+                        borderLeft: isHighlighted ? '3px solid #FACC15' : undefined
+                      }}
+                    >
+                      {/* Left side */}
+                      <div className="flex-1 min-w-0 pr-3 truncate" style={{ flex: 1, minWidth: 0, paddingRight: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <Typography
+                          className="truncate"
+                          sx={{
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                            color: '#F8FAFC',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
                           {tx.category} {displayDescription ? `- ${displayDescription}` : ''}
                         </Typography>
-                        <Typography sx={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#64748B', fontSize: '0.75rem' }}>
+                        <Typography
+                          className="truncate"
+                          sx={{
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                            color: '#64748B',
+                            fontSize: '0.75rem',
+                            mt: '2px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
                           {new Date(tx.created_at).toLocaleDateString()} • {tx.payment_method}
                         </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      </div>
+
+                      {/* Right side */}
+                      <div className="shrink-0 flex items-center gap-2" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Typography sx={{
                           fontFamily: "'JetBrains Mono', monospace",
                           fontWeight: 700,
+                          fontSize: '0.875rem',
+                          whiteSpace: 'nowrap',
                           color: tx.transaction_direction === 'inflow' 
                             ? (isEliteVault && !tx.description?.includes('ATM Withdrawal') ? '#3B82F6' : '#10B981') 
                             : '#F43F5E'
@@ -956,37 +1043,38 @@ export default function App() {
                         </Typography>
                         <button
                           onClick={() => handleDeleteTransaction(tx.id)}
+                          className="text-slate-500 hover:text-rose-400 p-1.5 transition-colors"
                           style={{
                             background: 'transparent',
                             border: 'none',
-                            color: '#475569',
-                            padding: '8px',
+                            color: '#64748b',
+                            padding: '6px',
                             cursor: 'pointer',
-                            transition: 'all 0.2s ease',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease',
+                            borderRadius: '6px'
                           }}
                           onMouseOver={(e) => {
                             e.currentTarget.style.color = '#F43F5E';
                             e.currentTarget.style.transform = 'scale(1.1)';
                             e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
-                            e.currentTarget.style.borderRadius = '8px';
                           }}
                           onMouseOut={(e) => {
-                            e.currentTarget.style.color = '#475569';
+                            e.currentTarget.style.color = '#64748b';
                             e.currentTarget.style.transform = 'scale(1)';
                             e.currentTarget.style.background = 'transparent';
                           }}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                           </svg>
                         </button>
-                      </Box>
-                    </Box>
-                  )
+                      </div>
+                    </div>
+                  );
                 })}
                 {transactions.length === 0 && (
                   <Box sx={{ p: 4, textAlign: 'center' }}>

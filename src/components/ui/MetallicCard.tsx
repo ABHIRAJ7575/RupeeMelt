@@ -3,6 +3,9 @@ import { Card, styled } from '@mui/material';
 import type { CardProps } from '@mui/material/Card';
 
 const StyledCard = styled(Card)(({ theme }) => ({
+  width: '100%',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
   backgroundColor: '#141923',
   border: '1px solid #1E2638',
   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',

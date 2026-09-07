@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, TextField, ToggleButton, ToggleButtonGroup, FormControl, InputLabel, Select, MenuItem, IconButton, FormControlLabel, Switch, Chip } from '@mui/material';
+import { Box, Typography, Button, TextField, ToggleButton, ToggleButtonGroup, IconButton, FormControlLabel, Switch, Chip } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SouthIcon from '@mui/icons-material/South';
 import NorthIcon from '@mui/icons-material/North';
-import type { SelectChangeEvent } from '@mui/material';
 import { MetallicCard } from '../ui/MetallicCard';
 
 interface FinancialEngineProps {
@@ -81,12 +80,16 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
         Ledger Engine
       </Typography>
 
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-        gap: '16px',
-        position: 'relative'
-      }}>
+      <div
+        className="w-full grid grid-cols-2 gap-3 relative"
+        style={{
+          width: '100%',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '12px',
+          position: 'relative'
+        }}
+      >
         {formStep === 1 && (
           <Box sx={{
             position: 'absolute',
@@ -111,11 +114,11 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
         <Button
           onClick={() => handleModeSelect('inflow')}
           sx={{
-            py: 4,
+            py: { xs: 2.5, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
             gap: 1,
-            fontSize: '1.25rem',
+            fontSize: '1.1rem',
             borderRadius: 4,
             textTransform: 'none',
             fontWeight: 700,
@@ -143,18 +146,18 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             ...(formStep === 2 && transactionType === 'outflow' ? { opacity: 0.5, filter: 'grayscale(1)' } : {})
           }}
         >
-          <SouthIcon sx={{ fontSize: 40, mb: 1 }} />
+          <SouthIcon sx={{ fontSize: 32, mb: 0.5 }} />
           Credit (+)
         </Button>
 
         <Button
           onClick={() => handleModeSelect('outflow')}
           sx={{
-            py: 4,
+            py: { xs: 2.5, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
             gap: 1,
-            fontSize: '1.25rem',
+            fontSize: '1.1rem',
             borderRadius: 4,
             textTransform: 'none',
             fontWeight: 700,
@@ -182,10 +185,10 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             ...(formStep === 2 && transactionType === 'inflow' ? { opacity: 0.5, filter: 'grayscale(1)' } : {})
           }}
         >
-          <NorthIcon sx={{ fontSize: 40, mb: 1 }} />
+          <NorthIcon sx={{ fontSize: 32, mb: 0.5 }} />
           Debit (-)
         </Button>
-      </Box>
+      </div>
 
       {isEliteVault && (
         <Box sx={{ mt: 1, p: 2, background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
@@ -291,88 +294,113 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
           </ToggleButtonGroup>
 
           <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <TextField
-              fullWidth
-              label="Amount (₹)"
-              variant="filled"
-              inputMode="decimal"
-              value={amountStr}
-              onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^0-9.]/g, '');
-                if ((sanitized.match(/\./g) || []).length > 1) return;
-                setAmountStr(sanitized);
-              }}
-              sx={{
-                '& .MuiFilledInput-root': {
-                  borderRadius: '12px',
-                  backgroundColor: '#0F131A',
-                  border: '1px solid #1E2638',
-                  color: '#F8FAFC',
-                  transition: 'all 0.3s ease',
-                  '&::before, &::after': { display: 'none' },
-                  '&:focus-within': {
-                    borderColor: transactionType === 'inflow' ? '#10B981' : '#F43F5E',
-                    boxShadow: transactionType === 'inflow' ? '0 0 12px rgba(16, 185, 129, 0.25)' : '0 0 12px rgba(244, 63, 94, 0.25)'
-                  }
-                },
-                '& .MuiInputLabel-root': { color: '#94A3B8' },
-                '& .MuiInputLabel-root.Mui-focused': { color: transactionType === 'inflow' ? '#10B981' : '#F43F5E' },
-              }}
-            />
+            <div className="w-full sm:flex-1">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 px-1">
+                Amount (₹)
+              </label>
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={amountStr}
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[^0-9.]/g, '');
+                    if ((sanitized.match(/\./g) || []).length > 1) return;
+                    setAmountStr(sanitized);
+                  }}
+                  className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors ${
+                    transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
+                  }`}
+                  style={{
+                    backgroundColor: '#0F131A',
+                    border: '1px solid #1E2638',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    fontSize: '0.875rem',
+                    color: '#F8FAFC',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
 
-            <FormControl fullWidth sx={{
-              '& .MuiInputLabel-root': { color: '#94A3B8' },
-              '& .MuiInputLabel-root.Mui-focused': { color: transactionType === 'inflow' ? '#10B981' : '#F43F5E' },
-            }}>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={category}
-                label="Category"
-                variant="filled"
-                onChange={(e: SelectChangeEvent) => setCategory(e.target.value)}
-                sx={{
-                  borderRadius: '12px',
-                  backgroundColor: '#0F131A',
-                  border: '1px solid #1E2638',
-                  color: '#F8FAFC',
-                  transition: 'all 0.3s ease',
-                  '&::before, &::after': { display: 'none' },
-                  '&:focus-within': {
-                    borderColor: transactionType === 'inflow' ? '#10B981' : '#F43F5E',
-                    boxShadow: transactionType === 'inflow' ? '0 0 12px rgba(16, 185, 129, 0.25)' : '0 0 12px rgba(244, 63, 94, 0.25)'
-                  }
-                }}
-              >
-                {currentCategories.map((c) => (
-                  <MenuItem key={c} value={c}>{c}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <div className="w-full sm:flex-1">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 px-1">
+                Category
+              </label>
+              <div className="relative w-full">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors appearance-none cursor-pointer ${
+                    transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
+                  }`}
+                  style={{
+                    backgroundColor: '#0F131A',
+                    border: '1px solid #1E2638',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    fontSize: '0.875rem',
+                    color: '#F8FAFC',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {currentCategories.map((c) => (
+                    <option key={c} value={c} style={{ backgroundColor: '#0F131A', color: '#F8FAFC' }}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                {/* Down Chevron Icon anchored right */}
+                <div 
+                  className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    right: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pointerEvents: 'none',
+                    color: '#94A3B8',
+                    fontSize: '0.65rem'
+                  }}
+                >
+                  ▼
+                </div>
+              </div>
+            </div>
           </Box>
 
-          <TextField
-            fullWidth
-            label="Description / Purpose (Optional)"
-            variant="filled"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            sx={{
-              '& .MuiFilledInput-root': {
-                borderRadius: '12px',
-                backgroundColor: '#0F131A',
-                border: '1px solid #1E2638',
-                color: '#F8FAFC',
-                transition: 'all 0.3s ease',
-                '&::before, &::after': { display: 'none' },
-                '&:focus-within': {
-                  borderColor: transactionType === 'inflow' ? '#10B981' : '#F43F5E',
-                  boxShadow: transactionType === 'inflow' ? '0 0 12px rgba(16, 185, 129, 0.25)' : '0 0 12px rgba(244, 63, 94, 0.25)'
-                }
-              },
-              '& .MuiInputLabel-root': { color: '#94A3B8' },
-              '& .MuiInputLabel-root.Mui-focused': { color: transactionType === 'inflow' ? '#10B981' : '#F43F5E' },
-            }}
-          />
+          <div className="w-full">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 px-1">
+              Description / Purpose (Optional)
+            </label>
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="e.g. Flight, Dinner, Shopping"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors ${
+                  transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
+                }`}
+                style={{
+                  backgroundColor: '#0F131A',
+                  border: '1px solid #1E2638',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  fontSize: '0.875rem',
+                  color: '#F8FAFC',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+          </div>
 
           {isEliteVault && tripMembers.length > 0 && (
             <Box sx={{ mt: 1, p: 2, background: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', border: '1px dashed #334155' }}>
