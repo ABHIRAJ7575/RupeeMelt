@@ -520,3 +520,237 @@ body {
 .tracking-tight {
   letter-spacing: -0.025em !important;
 }
+
+/* Horizontal Category Snap-Track Utilities */
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.snap-x {
+  scroll-snap-type: x mandatory !important;
+}
+
+.snap-mandatory {
+  scroll-snap-type: x mandatory !important;
+}
+
+.snap-start {
+  scroll-snap-align: start !important;
+}
+
+.shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+.px-1 {
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.pb-1 {
+  padding-bottom: 0.25rem !important;
+}
+
+.py-1\.5 {
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+
+.w-2 {
+  width: 0.5rem !important;
+}
+
+.h-2 {
+  height: 0.5rem !important;
+}
+
+.rounded-full {
+  border-radius: 9999px !important;
+}
+
+.whitespace-nowrap {
+  white-space: nowrap !important;
+}
+
+.duration-200 {
+  transition-duration: 200ms !important;
+}
+
+.bg-slate-800 {
+  background-color: #1e293b !important;
+}
+
+.border-cyan-400\/80 {
+  border-color: rgba(34, 211, 238, 0.8) !important;
+}
+
+.shadow-\[0_0_10px_rgba\(34\,211\,238\,0\.25\)\] {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.25) !important;
+}
+
+.text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+.hover\:border-slate-700:hover {
+  border-color: #334155 !important;
+}
+
+.hover\:bg-slate-800\/50:hover {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+.cursor-grab {
+  cursor: grab !important;
+}
+
+.active\:cursor-grabbing:active {
+  cursor: grabbing !important;
+}
+
+.select-none {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.pointer-events-auto {
+  pointer-events: auto !important;
+}
+
+.max-w-full {
+  max-width: 100% !important;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+.pb-2 {
+  padding-bottom: 0.5rem !important;
+}
+
+.w-7 {
+  width: 1.75rem !important;
+}
+
+.h-7 {
+  height: 1.75rem !important;
+}
+
+.w-3\.5 {
+  width: 0.875rem !important;
+}
+
+.h-3\.5 {
+  height: 0.875rem !important;
+}
+
+.bg-slate-800\/90 {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+.border-slate-700\/80 {
+  border-color: rgba(51, 65, 85, 0.8) !important;
+}
+
+.hover\:text-white:hover {
+  color: #ffffff !important;
+}
+
+.hover\:border-cyan-400:hover {
+  border-color: #22d3ee !important;
+}
+
+.active\:scale-90:active {
+  transform: scale(0.9) !important;
+}
+
+.shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth !important;
+}
+
+.py-1 {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.gap-1\.5 {
+  gap: 0.375rem !important;
+}
+
+.border-cyan-400 {
+  border-color: #22d3ee !important;
+}
+
+.shadow-\[0_0_8px_rgba\(34\,211\,238\,0\.3\)\] {
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.3) !important;
+}
+
+.bg-slate-900\/80 {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.w-8 {
+  width: 2rem !important;
+}
+
+.h-8 {
+  height: 2rem !important;
+}
+
+.w-4 {
+  width: 1rem !important;
+}
+
+.h-4 {
+  height: 1rem !important;
+}
+
+.px-2 {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.pointer-events-none {
+  pointer-events: none !important;
+}
+
+.border-slate-700 {
+  border-color: #334155 !important;
+}
+
+.flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+.max-h-\[85px\] {
+  max-height: 85px !important;
+}
+
+.overflow-y-auto {
+  overflow-y: auto !important;
+}
+
+.px-2\.5 {
+  padding-left: 0.625rem !important;
+  padding-right: 0.625rem !important;
+}
+
+.w-1\.5 {
+  width: 0.375rem !important;
+}
+
+.h-1\.5 {
+  height: 0.375rem !important;
+}

@@ -126,7 +126,7 @@ export default function App() {
   }, []);
 
   const [isEliteVault, setIsEliteVault] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<{ name: string; value: number } | null>(null);
+  const [activeCategory, setActiveCategory] = useState<{ name: string; value: number; color?: string; percentage?: number } | null>(null);
   const [tripMembers, setTripMembers] = useState<string[]>(() => JSON.parse(localStorage.getItem('elite_roster') || '[]'));
 
   const currentRoomId = isEliteVault ? 'Elite_Trip_Vault' : 'My_Personal_Ledger';
@@ -344,15 +344,25 @@ export default function App() {
       return acc;
     }, {} as Record<string, number>);
 
-  const chartData = Object.keys(expensesByCategory)
+  const PIE_COLORS = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
+
+  const rawSortedCategories = Object.keys(expensesByCategory)
     .map(key => ({
       name: key,
       value: expensesByCategory[key]
     }))
     .sort((a, b) => b.value - a.value);
 
-  const totalExpenseAmount = chartData.reduce((acc, curr) => acc + curr.value, 0);
-  const PIE_COLORS = ['#06b6d4', '#8b5cf6', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6'];
+  const totalExpenseAmount = rawSortedCategories.reduce((acc, curr) => acc + curr.value, 0);
+
+  const categories = rawSortedCategories.map((item, index) => ({
+    name: item.name,
+    value: item.value,
+    color: PIE_COLORS[index % PIE_COLORS.length],
+    percentage: totalExpenseAmount > 0 ? Math.round((item.value / totalExpenseAmount) * 100) : 0
+  }));
+
+  const chartData = categories;
 
   const handleRecordTransaction = async (amountPaisa: number, type: 'inflow' | 'outflow', paymentMethod: 'online' | 'offline', category: string, desc: string) => {
     try {
@@ -920,107 +930,142 @@ export default function App() {
           </Box>
 
           {/* Tableau-Grade Visual Analytics */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 3 }}>
-            <MetallicCard sx={{
-              p: 4,
-              height: 400,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              background: '#141923',
-              border: '1px solid #1E2638',
-              borderRadius: '16px',
-            }}>
+          <Box className="w-full min-w-0" sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 3, minWidth: 0 }}>
+            <MetallicCard
+              className="w-full min-w-0 overflow-hidden"
+              sx={{
+                p: { xs: 3, sm: 4 },
+                minHeight: 400,
+                height: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                background: '#141923',
+                border: '1px solid #1E2638',
+                borderRadius: '16px',
+                minWidth: 0,
+                overflow: 'hidden'
+              }}
+            >
               <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
                 Expenses Breakdown
               </Typography>
               {chartData.length > 0 ? (
-                <div
-                  className="relative w-full h-64 flex items-center justify-center"
-                  style={{ position: 'relative', width: '100%', height: '16rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius="70%"
-                        outerRadius="90%"
-                        dataKey="value"
-                        stroke="transparent"
-                        onClick={(entry: any) => {
-                          if (entry && entry.name) {
-                            setActiveCategory({ name: entry.name, value: Number(entry.value) });
-                          }
+                <>
+                  <div
+                    className="relative w-full h-64 flex items-center justify-center"
+                    style={{ position: 'relative', width: '100%', height: '16rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="70%"
+                          outerRadius="90%"
+                          dataKey="value"
+                          stroke="transparent"
+                          onClick={(entry: any) => {
+                            if (entry && entry.name) {
+                              setActiveCategory(activeCategory?.name === entry.name ? null : entry);
+                            }
+                          }}
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                              stroke="transparent"
+                              onClick={() => setActiveCategory(activeCategory?.name === entry.name ? null : entry)}
+                              style={{ cursor: 'pointer', outline: 'none' }}
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    {/* The Dynamic Hollow Center (Apple Card Style) */}
+                    <div
+                      className="absolute inset-0 m-auto flex flex-col items-center justify-center text-center select-none"
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        maxWidth: '120px',
+                        pointerEvents: activeCategory ? 'auto' : 'none',
+                        cursor: activeCategory ? 'pointer' : 'default'
+                      }}
+                      onClick={() => {
+                        if (activeCategory) setActiveCategory(null);
+                      }}
+                    >
+                      <span
+                        className="text-xs font-medium text-slate-400 max-w-[120px] truncate block tracking-wider uppercase"
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          color: '#94a3b8',
+                          maxWidth: '120px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: 'block',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em'
+                        }}
+                        title={activeCategory ? activeCategory.name : 'Total'}
+                      >
+                        {activeCategory ? activeCategory.name : 'Total'}
+                      </span>
+                      <span
+                        className="text-xl sm:text-2xl font-bold text-white tracking-tight"
+                        style={{
+                          fontSize: '1.5rem',
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          letterSpacing: '-0.025em',
+                          whiteSpace: 'nowrap'
                         }}
                       >
-                        {chartData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={PIE_COLORS[index % PIE_COLORS.length]}
-                            stroke="transparent"
-                            onClick={() => setActiveCategory(entry)}
-                            style={{ cursor: 'pointer', outline: 'none' }}
-                          />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-
-                  {/* The Dynamic Hollow Center (Apple Card Style) */}
-                  <div
-                    className="absolute inset-0 m-auto flex flex-col items-center justify-center text-center select-none"
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      maxWidth: '120px',
-                      pointerEvents: activeCategory ? 'auto' : 'none',
-                      cursor: activeCategory ? 'pointer' : 'default'
-                    }}
-                    onClick={() => {
-                      if (activeCategory) setActiveCategory(null);
-                    }}
-                  >
-                    <span
-                      className="text-xs font-medium text-slate-400 max-w-[120px] truncate block tracking-wider uppercase"
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 500,
-                        color: '#94a3b8',
-                        maxWidth: '120px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: 'block',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}
-                      title={activeCategory ? activeCategory.name : 'Total'}
-                    >
-                      {activeCategory ? activeCategory.name : 'Total'}
-                    </span>
-                    <span
-                      className="text-xl sm:text-2xl font-bold text-white tracking-tight"
-                      style={{
-                        fontSize: '1.5rem',
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        letterSpacing: '-0.025em',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      ₹{(activeCategory ? activeCategory.value : totalExpenseAmount).toLocaleString('en-IN')}
-                    </span>
+                        ₹{(activeCategory ? activeCategory.value : totalExpenseAmount).toLocaleString('en-IN')}
+                      </span>
+                    </div>
                   </div>
-                </div>
+
+                  <div className="w-full mt-4 px-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2 max-h-[85px] overflow-y-auto scrollbar-none py-1">
+                      {categories.map((cat) => {
+                        const isSelected = activeCategory?.name === cat.name;
+                        return (
+                          <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() => setActiveCategory(isSelected ? null : cat)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-150 text-[11px] ${
+                              isSelected
+                                ? 'bg-slate-800 border-cyan-400 text-white shadow-[0_0_8px_rgba(34,211,238,0.3)]'
+                                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
+                            }`}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            <span className="font-medium whitespace-nowrap">{cat.name}</span>
+                            <span className="font-mono text-slate-400">{cat.percentage}%</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               ) : (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '16rem', background: 'radial-gradient(circle at center, rgba(30, 38, 56, 0.5) 0%, transparent 70%)', borderRadius: '8px' }}>
                   <Typography variant="subtitle1" color="text.secondary">No expenses recorded yet.</Typography>
