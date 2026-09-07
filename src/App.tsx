@@ -542,66 +542,110 @@ export default function App() {
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', mt: 3, mb: 1, position: 'relative', zIndex: 20, background: 'rgba(20, 25, 35, 0.6)', backdropFilter: 'blur(8px)', p: 2, borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <Box
+              className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 rounded-2xl bg-slate-900/40 border border-slate-800/60 mb-6 w-full"
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+                gap: '10px',
+                p: '12px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(30, 41, 59, 0.6)',
+                mt: 3,
+                mb: 3,
+                width: '100%',
+                position: 'relative',
+                zIndex: 20
+              }}
+            >
               <Button
+                fullWidth
+                className="py-2 px-3 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-95"
                 sx={{
                   background: 'rgba(30, 41, 59, 0.4)',
                   backdropFilter: 'blur(8px)',
-                  padding: '6px 16px',
-                  border: isEliteVault ? '1px solid rgba(250, 204, 21, 0.8)' : '1px solid rgba(250, 204, 21, 0.3)',
+                  py: 1,
+                  px: 1.5,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  textTransform: 'none',
                   borderRadius: '8px',
                   color: '#FACC15',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  border: isEliteVault ? '1px solid rgba(250, 204, 21, 0.8)' : '1px solid rgba(250, 204, 21, 0.3)',
                   boxShadow: isEliteVault ? '0 0 12px rgba(250, 204, 21, 0.3)' : 'none',
+                  transition: 'all 150ms ease',
                   '&:hover': {
                     background: 'rgba(30, 41, 59, 0.8)',
                     boxShadow: '0 0 12px rgba(250, 204, 21, 0.5)'
-                  }
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  '& .MuiButton-startIcon': { mr: 0.5, '& > *:nth-of-type(1)': { fontSize: '1rem' } }
                 }}
                 onClick={() => setIsEliteVault(!isEliteVault)}
-                startIcon={<AutoAwesomeIcon />}
+                startIcon={<AutoAwesomeIcon sx={{ fontSize: '1rem' }} />}
               >
                 {isEliteVault ? 'Exit Vault' : 'Elite Expenses'}
               </Button>
               <Button
+                fullWidth
+                className="py-2 px-3 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-95"
                 sx={{
                   background: 'rgba(30, 41, 59, 0.4)',
                   backdropFilter: 'blur(8px)',
-                  padding: '6px 16px',
-                  border: isIncognito ? '1px solid rgba(6, 182, 212, 0.8)' : '1px solid rgba(6, 182, 212, 0.3)',
+                  py: 1,
+                  px: 1.5,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  textTransform: 'none',
                   borderRadius: '8px',
                   color: '#06B6D4',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  border: isIncognito ? '1px solid rgba(6, 182, 212, 0.8)' : '1px solid rgba(6, 182, 212, 0.3)',
                   boxShadow: isIncognito ? '0 0 12px rgba(6, 182, 212, 0.3)' : 'none',
+                  transition: 'all 150ms ease',
                   '&:hover': {
                     background: 'rgba(30, 41, 59, 0.8)',
                     boxShadow: '0 0 12px rgba(6, 182, 212, 0.5)'
-                  }
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  '& .MuiButton-startIcon': { mr: 0.5, '& > *:nth-of-type(1)': { fontSize: '1rem' } }
                 }}
-                startIcon={isIncognito ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                startIcon={isIncognito ? <VisibilityOffIcon sx={{ fontSize: '1rem' }} /> : <VisibilityIcon sx={{ fontSize: '1rem' }} />}
                 onClick={toggleIncognito}
               >
                 {isIncognito ? 'Reveal' : 'Incognito'}
               </Button>
               <Button
+                fullWidth
+                className="py-2 px-3 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-95"
                 sx={{
                   background: 'rgba(30, 41, 59, 0.4)',
                   backdropFilter: 'blur(8px)',
-                  padding: '6px 16px',
-                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  py: 1,
+                  px: 1.5,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  textTransform: 'none',
                   borderRadius: '8px',
                   color: '#94A3B8',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  transition: 'all 150ms ease',
                   '&:hover': {
                     background: 'rgba(30, 41, 59, 0.8)',
                     borderColor: 'rgba(148, 163, 184, 0.5)',
                     boxShadow: '0 0 12px rgba(148, 163, 184, 0.2)'
-                  }
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  '& .MuiButton-startIcon': { mr: 0.5, '& > *:nth-of-type(1)': { fontSize: '1rem' } }
                 }}
-                startIcon={<LockIcon />}
+                startIcon={<LockIcon sx={{ fontSize: '1rem' }} />}
                 onClick={() => {
                   sessionStorage.removeItem('vault_unlocked');
                   setIsAppUnlocked(false);
@@ -610,63 +654,90 @@ export default function App() {
                 Lock Vault
               </Button>
               <Button
+                fullWidth
+                className="py-2 px-3 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-95"
                 sx={{
                   background: 'rgba(30, 41, 59, 0.4)',
                   backdropFilter: 'blur(8px)',
-                  padding: '6px 16px',
-                  border: '1px solid rgba(16, 185, 129, 0.5)',
+                  py: 1,
+                  px: 1.5,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  textTransform: 'none',
                   borderRadius: '8px',
                   color: '#10B981',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  border: '1px solid rgba(16, 185, 129, 0.5)',
+                  transition: 'all 150ms ease',
                   '&:hover': {
                     background: 'rgba(30, 41, 59, 0.8)',
                     boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)'
-                  }
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  '& .MuiButton-startIcon': { mr: 0.5, '& > *:nth-of-type(1)': { fontSize: '1rem' } }
                 }}
-                startIcon={<PaymentsIcon />}
+                startIcon={<PaymentsIcon sx={{ fontSize: '1rem' }} />}
                 onClick={() => setAtmModalOpen(true)}
               >
                 Convert to Cash
               </Button>
               <Button
+                fullWidth
+                className="py-2 px-3 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-95"
                 sx={{
                   background: 'rgba(30, 41, 59, 0.4)',
                   backdropFilter: 'blur(8px)',
-                  padding: '6px 16px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  py: 1,
+                  px: 1.5,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  textTransform: 'none',
                   borderRadius: '8px',
                   color: '#F8FAFC',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  transition: 'all 150ms ease',
                   '&:hover': {
                     background: 'rgba(30, 41, 59, 0.8)',
                     borderColor: 'rgba(255, 255, 255, 0.3)',
                     boxShadow: '0 0 12px rgba(255, 255, 255, 0.2)'
-                  }
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  '& .MuiButton-startIcon': { mr: 0.5, '& > *:nth-of-type(1)': { fontSize: '1rem' } }
                 }}
-                startIcon={<PictureAsPdfIcon />}
+                startIcon={<PictureAsPdfIcon sx={{ fontSize: '1rem' }} />}
                 onClick={handleExport}
               >
                 Export PDF
               </Button>
               <Button
+                fullWidth
+                className="py-2 px-3 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-95"
                 sx={{
                   background: 'rgba(30, 41, 59, 0.4)',
                   backdropFilter: 'blur(8px)',
-                  padding: '6px 16px',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  py: 1,
+                  px: 1.5,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  textTransform: 'none',
                   borderRadius: '8px',
                   color: '#F43F5E',
-                  fontWeight: 600,
-                  transition: 'all 0.2s',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  transition: 'all 150ms ease',
                   '&:hover': {
                     background: 'rgba(30, 41, 59, 0.8)',
                     borderColor: 'rgba(244, 63, 94, 0.5)',
                     boxShadow: '0 0 12px rgba(244, 63, 94, 0.3)'
-                  }
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  '& .MuiButton-startIcon': { mr: 0.5, '& > *:nth-of-type(1)': { fontSize: '1rem' } }
                 }}
-                startIcon={<DeleteForeverIcon />}
+                startIcon={<DeleteForeverIcon sx={{ fontSize: '1rem' }} />}
                 onClick={() => setResetStage(1)}
               >
                 Reset Ledger
@@ -685,129 +756,161 @@ export default function App() {
               mb: 3
             }}
           >
-            <MetallicCard sx={{
-              p: { xs: 2.5, sm: 3, md: 4 },
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-              height: '100%',
-              background: '#141923',
-              border: '1px solid #1E2638',
-              borderRadius: '16px',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-                boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
-                transform: 'translateY(-4px)'
-              }
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
-                  Total Net Balance
-                </Typography>
-                <AccountBalanceWalletIcon sx={{ color: '#94A3B8', flexShrink: 0, ml: 1 }} />
-              </Box>
-              <Typography
-                variant="h2"
-                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
-                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
+            {/* Card 1: Net Balance */}
+            <div
+              className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-cyan-500/30 transition-colors w-full flex flex-col justify-between"
+              style={{
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid #1e293b',
+                transition: 'border-color 0.2s ease, transform 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                width: '100%'
+              }}
+            >
+              <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span className="truncate" style={{ fontSize: 'clamp(11px, 2.5vw, 12px)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>
+                  Net Balance
+                </span>
+                <AccountBalanceWalletIcon sx={{ color: '#94A3B8', fontSize: { xs: 16, sm: 18 }, flexShrink: 0, ml: 0.5 }} />
+              </div>
+              <div
+                className={`text-base sm:text-lg font-bold font-mono tracking-tight truncate ${isIncognito ? 'incognito-blur' : ''}`}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  lineHeight: 1.2,
+                  color: '#F8FAFC'
+                }}
               >
                 <Odometer amount={totalNetBalancePaisa} />
-              </Typography>
-            </MetallicCard>
+              </div>
+            </div>
 
-            <MetallicCard sx={{
-              p: { xs: 2.5, sm: 3, md: 4 },
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-              height: '100%',
-              background: '#141923',
-              border: '1px solid #1E2638',
-              borderRadius: '16px',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                borderColor: 'rgba(16, 185, 129, 0.5)',
-                boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.15)',
-                transform: 'translateY(-4px)'
-              }
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
-                  Total Inflows
-                </Typography>
-                <TrendingUpIcon sx={{ color: '#10B981', flexShrink: 0, ml: 1 }} />
-              </Box>
-              <Typography
-                variant="h2"
-                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
-                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: isEliteVault ? '#3B82F6' : '#10B981' }}
+            {/* Card 2: Inflows */}
+            <div
+              className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-emerald-500/30 transition-colors w-full flex flex-col justify-between"
+              style={{
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid #1e293b',
+                transition: 'border-color 0.2s ease, transform 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                width: '100%'
+              }}
+            >
+              <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span className="truncate" style={{ fontSize: 'clamp(11px, 2.5vw, 12px)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>
+                  Inflows
+                </span>
+                <TrendingUpIcon sx={{ color: '#10B981', fontSize: { xs: 16, sm: 18 }, flexShrink: 0, ml: 0.5 }} />
+              </div>
+              <div
+                className={`text-base sm:text-lg font-bold font-mono tracking-tight truncate ${isIncognito ? 'incognito-blur' : ''}`}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  lineHeight: 1.2,
+                  color: isEliteVault ? '#3B82F6' : '#10B981'
+                }}
               >
                 <Odometer amount={totalInflowPaisa} />
-              </Typography>
-            </MetallicCard>
+              </div>
+            </div>
 
-            <MetallicCard sx={{
-              p: { xs: 2.5, sm: 3, md: 4 },
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-              height: '100%',
-              background: '#141923',
-              border: '1px solid #1E2638',
-              borderRadius: '16px',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                borderColor: 'rgba(244, 63, 94, 0.5)',
-                boxShadow: '0 10px 20px -5px rgba(244, 63, 94, 0.15)',
-                transform: 'translateY(-4px)'
-              }
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
-                  Total Expenses
-                </Typography>
-                <TrendingDownIcon sx={{ color: '#F43F5E', flexShrink: 0, ml: 1 }} />
-              </Box>
-              <Typography
-                variant="h2"
-                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
-                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F43F5E' }}
+            {/* Card 3: Expenses */}
+            <div
+              className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-rose-500/30 transition-colors w-full flex flex-col justify-between"
+              style={{
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid #1e293b',
+                transition: 'border-color 0.2s ease, transform 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                width: '100%'
+              }}
+            >
+              <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span className="truncate" style={{ fontSize: 'clamp(11px, 2.5vw, 12px)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>
+                  Expenses
+                </span>
+                <TrendingDownIcon sx={{ color: '#F43F5E', fontSize: { xs: 16, sm: 18 }, flexShrink: 0, ml: 0.5 }} />
+              </div>
+              <div
+                className={`text-base sm:text-lg font-bold font-mono tracking-tight truncate ${isIncognito ? 'incognito-blur' : ''}`}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  lineHeight: 1.2,
+                  color: '#F43F5E'
+                }}
               >
                 <Odometer amount={totalExpensesPaisa} />
-              </Typography>
-            </MetallicCard>
+              </div>
+            </div>
 
-            <MetallicCard sx={{
-              p: { xs: 2.5, sm: 3, md: 4 },
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-              height: '100%',
-              background: '#141923',
-              border: '1px solid #1E2638',
-              borderRadius: '16px',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-                boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.5)',
-                transform: 'translateY(-4px)'
-              }
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 0 }}>
-                <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }} className="truncate">
-                  Cash on Hand (Offline)
-                </Typography>
-                <PaymentsIcon sx={{ color: '#94A3B8', flexShrink: 0, ml: 1 }} />
-              </Box>
-              <Typography
-                variant="h2"
-                className={`truncate ${isIncognito ? 'incognito-blur' : ''}`}
-                sx={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 'clamp(1.1rem, 4vw, 1.8rem)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1, color: '#F8FAFC' }}
+            {/* Card 4: Cash in Hand */}
+            <div
+              className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-amber-500/30 transition-colors w-full flex flex-col justify-between"
+              style={{
+                padding: '12px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid #1e293b',
+                transition: 'border-color 0.2s ease, transform 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                width: '100%'
+              }}
+            >
+              <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span className="truncate" style={{ fontSize: 'clamp(11px, 2.5vw, 12px)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>
+                  Cash in Hand
+                </span>
+                <PaymentsIcon sx={{ color: '#94A3B8', fontSize: { xs: 16, sm: 18 }, flexShrink: 0, ml: 0.5 }} />
+              </div>
+              <div
+                className={`text-base sm:text-lg font-bold font-mono tracking-tight truncate ${isIncognito ? 'incognito-blur' : ''}`}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  lineHeight: 1.2,
+                  color: '#F8FAFC'
+                }}
               >
                 <Odometer amount={cashOnHandPaisa} />
-              </Typography>
-            </MetallicCard>
+              </div>
+            </div>
           </Box>
 
           {/* Tableau-Grade Visual Analytics */}
