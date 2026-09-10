@@ -2,120 +2,134 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { LedgerTransaction } from './supabase';
 
-
 export const generateLedgerReport = (roomName: string, transactions: LedgerTransaction[]) => {
-  const formatDate = (dateString: string | Date | number) => {
-    const d = new Date(dateString);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
   const doc = new jsPDF();
   
   // Header
   doc.setFontSize(20);
-  doc.setTextColor(44, 62, 80); // #2C3E50 Crisp deep charcoal-slate
+  doc.setTextColor(15, 23, 42); // #0f172a Deep slate
   const title = roomName === 'Elite_Trip_Vault' ? 'Elite Trip Report' : `Abhiraj Dixit's Transactions`;
   doc.text(title, 14, 22);
   
-  doc.setFontSize(12);
-  doc.setTextColor(90, 108, 125);
+  doc.setFontSize(11);
+  doc.setTextColor(100, 116, 139); // #64748b Muted slate
   doc.text(`Room: ${roomName}`, 14, 30);
-  doc.text(`Generated: ${formatDate(new Date())}`, 14, 36);
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 36);
 
-  // Grand Totals Calculation
-  const totalDebit = transactions.filter(t => t.transaction_direction === 'outflow').reduce((sum, t) => sum + (t.amount_paisa / 100), 0);
-  const totalCredit = transactions.filter(t => t.transaction_direction === 'inflow').reduce((sum, t) => sum + (t.amount_paisa / 100), 0);
-  const totalDebitFormatted = totalDebit.toLocaleString('en-IN');
-  const totalCreditFormatted = totalCredit.toLocaleString('en-IN');
+  // Ensure transactions are sorted chronologically ascending before mapping to PDF rows
+  const sortedTx = [...transactions].sort((a: any, b: any) => {
+    const timeA = new Date(a.date || a.timestamp || a.created_at).getTime();
+    const timeB = new Date(b.date || b.timestamp || b.created_at).getTime();
+    return timeA - timeB;
+  });
 
-  // Table Data
-  const chronologicalTransactions = [...transactions].reverse();
-  const tableData = chronologicalTransactions.map((item, index) => {
-    let modeText = item.payment_method === 'online' ? 'Online' : 'Cash';
-    const amountStr = (item.amount_paisa / 100).toLocaleString('en-IN');
-    
-    // Determine Debit vs Credit
-    const debit = item.transaction_direction === 'outflow' ? amountStr : '-';
-    const credit = item.transaction_direction === 'inflow' ? amountStr : '-';
+  let cumulativeBal = 0;
+  const tableRows = sortedTx.map((tx: any) => {
+    const amt = Number(tx.amount !== undefined ? tx.amount : (tx.amount_paisa / 100)) || 0;
+    const isCredit = tx.type === 'credit' || tx.type === 'inflow' || tx.transaction_direction === 'inflow';
+    cumulativeBal = isCredit ? cumulativeBal + amt : cumulativeBal - amt;
+
+    const rawDate = tx.date || tx.timestamp || tx.created_at;
+    const dateStr = tx.date || (rawDate ? new Date(rawDate).toLocaleDateString('en-IN') : 'N/A');
+    const desc = (tx.note || tx.description || 'Transaction')
+      .replace(/\[HIGHLIGHT\]/g, '')
+      .replace(/\[ELITE\]/g, '')
+      .trim();
 
     return [
-      (index + 1).toString(),
-      formatDate(item.created_at),
-      modeText,
-      item.category,
-      item.description || 'N/A',
-      debit,
-      credit
+      dateStr,
+      desc || 'Transaction',
+      tx.category || 'General',
+      isCredit ? 'CREDIT' : 'DEBIT',
+      `${isCredit ? '+ ' : '- '}${amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      `${cumulativeBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     ];
   });
 
   autoTable(doc, {
     startY: 45,
-    head: [['S.No', 'Date', 'Mode', 'Category', 'Description', 'Debit (Dr.)', 'Credit (Cr.)']],
-    body: tableData,
+    head: [['Date', 'Description / Note', 'Category', 'Type', 'Amount (INR)', 'Running Balance (INR)']],
+    body: tableRows,
     foot: [
       [
         { 
-          content: 'GRAND TOTALS', 
+          content: 'CLOSING BALANCE', 
           colSpan: 5, 
-          styles: { halign: 'right', fontStyle: 'bold', fillColor: [30, 38, 56], textColor: 255 } 
+          styles: { halign: 'right', fontStyle: 'bold', fillColor: [15, 23, 42], textColor: [56, 189, 248] } 
         },
         { 
-          content: totalDebitFormatted, 
-          styles: { fontStyle: 'bold', fillColor: [244, 63, 94], textColor: 255 } // Crimson Red
-        },
-        { 
-          content: totalCreditFormatted, 
-          styles: { fontStyle: 'bold', fillColor: [16, 185, 129], textColor: 255 } // Emerald Green
+          content: `${cumulativeBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+          styles: { halign: 'right', fontStyle: 'bold', fillColor: cumulativeBal >= 0 ? [16, 185, 129] : [244, 63, 94], textColor: 255 }
         }
       ]
     ],
     theme: 'grid',
-    headStyles: {
-      fillColor: [39, 174, 96], // #27AE60 Vibrant emerald-mint
-      textColor: [255, 255, 255]
-    },
     styles: {
       font: 'helvetica',
-      fontSize: 10,
+      fontSize: 8,
+      cellPadding: { top: 3, right: 4, bottom: 3, left: 4 },
+      valign: 'middle',
+      overflow: 'linebreak',
+    },
+    headStyles: {
+      fillColor: [15, 23, 42], // Slate 900
+      textColor: [56, 189, 248], // Cyan 400
+      fontStyle: 'bold',
+      fontSize: 8.5,
+    },
+    columnStyles: {
+      0: { cellWidth: 22, halign: 'left' },   // Date
+      1: { cellWidth: 'auto', halign: 'left' }, // Description / Note (expands to fill)
+      2: { cellWidth: 26, halign: 'left' },   // Category
+      3: { cellWidth: 16, halign: 'center' }, // Type (DEBIT/CREDIT)
+      4: { cellWidth: 32, halign: 'right' },  // Amount (INR)
+      5: { cellWidth: 34, halign: 'right' },  // Running Balance (INR)
     },
     alternateRowStyles: {
-      fillColor: [244, 247, 246] // #F4F7F6 Ultra-light mint-ceramic white
+      fillColor: [248, 250, 252] // #f8fafc slate-50
     },
     didParseCell: function(data) {
+      if (data.section === 'head') {
+        if (data.column.index === 3) data.cell.styles.halign = 'center';
+        if (data.column.index === 4 || data.column.index === 5) data.cell.styles.halign = 'right';
+      }
       if (data.section === 'body') {
         const rawRow = data.row.raw as any[];
-        const isHighlighted = rawRow && rawRow[4] && rawRow[4].toString().includes('[HIGHLIGHT]');
+        const isCredit = rawRow && rawRow[3] === 'CREDIT';
+
+        // Check for highlighted transactions in original record
+        const descText = rawRow && rawRow[1] ? rawRow[1].toString() : '';
+        const isHighlighted = descText.includes('[HIGHLIGHT]');
         if (isHighlighted) {
           data.cell.styles.fillColor = [254, 240, 138]; // #FEF08A Pale gold
           data.cell.styles.textColor = [0, 0, 0];
-        }
-        
-        if (data.column.index === 4 && data.cell.text) {
-          if (typeof data.cell.text === 'string') {
-            (data.cell as any).text = (data.cell.text as string)
-              .replace(/₹/g, 'Rs. ')
-              .replace(/[^\x00-\x7F]/g, '')
-              .replace(/\[HIGHLIGHT\]/g, '')
-              .replace(/\[ELITE\]/g, '')
-              .trim();
-          } else if (Array.isArray(data.cell.text)) {
-            (data.cell as any).text = (data.cell.text as string[]).map((t: string) => typeof t === 'string' ? t
-              .replace(/₹/g, 'Rs. ')
-              .replace(/[^\x00-\x7F]/g, '')
-              .replace(/\[HIGHLIGHT\]/g, '')
-              .replace(/\[ELITE\]/g, '')
-              .trim() : t);
+        } else {
+          // Style credit amounts with soft green tint and debit amounts with soft red tint
+          if (data.column.index === 4) {
+            if (isCredit) {
+              data.cell.styles.textColor = [5, 150, 105]; // Emerald-600
+              data.cell.styles.fillColor = [236, 253, 245]; // Emerald-50 soft green tint
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              data.cell.styles.textColor = [225, 29, 72]; // Rose-600
+              data.cell.styles.fillColor = [255, 241, 242]; // Rose-50 soft red tint
+              data.cell.styles.fontStyle = 'bold';
+            }
+          } else if (data.column.index === 3) {
+            if (isCredit) {
+              data.cell.styles.textColor = [5, 150, 105];
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              data.cell.styles.textColor = [225, 29, 72];
+              data.cell.styles.fontStyle = 'bold';
+            }
           }
         }
       }
     },
     didDrawPage: function (data) {
       const doc = data.doc;
-      const str = 'Generated by RupeeMelt Core Engine V5.0';
+      const str = 'Generated by RupeeMelt Core Engine V5.3';
       doc.setFontSize(8);
       doc.setTextColor(148, 163, 184); // Muted slate color
       doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
@@ -130,12 +144,13 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   let totalInflow = 0;
   const expensesByCategory: Record<string, number> = {};
 
-  transactions.forEach(t => {
-    const amount = t.amount_paisa / 100;
-    if (t.transaction_direction === 'inflow') {
+  transactions.forEach((t: any) => {
+    const amount = Number(t.amount !== undefined ? t.amount : (t.amount_paisa / 100)) || 0;
+    const isCredit = t.type === 'credit' || t.type === 'inflow' || t.transaction_direction === 'inflow';
+    if (isCredit) {
       totalInflow += amount;
       if (t.category === 'Cashback') totalCashbacks += amount;
-    } else if (t.transaction_direction === 'outflow') {
+    } else {
       grandTotalExpenses += amount;
       if (t.payment_method === 'online') totalOnlineExpenses += amount;
       if (t.payment_method === 'offline') totalOfflineExpenses += amount;
@@ -146,36 +161,40 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   const grandTotalMoneyLeft = totalInflow - grandTotalExpenses;
 
   const summaryData = [
-    ['Total Cashbacks Received', `₹${totalCashbacks.toFixed(2)}`],
-    ...Object.keys(expensesByCategory).map(cat => [`Expense Category: ${cat}`, `₹${expensesByCategory[cat].toFixed(2)}`]),
-    ['Total Online Expenses', `₹${totalOnlineExpenses.toFixed(2)}`],
-    ['Total Cash (Offline) Expenses', `₹${totalOfflineExpenses.toFixed(2)}`],
-    ['Grand Total Expenses', `₹${grandTotalExpenses.toFixed(2)}`],
-    ['Grand Total Money Left', `₹${grandTotalMoneyLeft.toFixed(2)}`]
+    ['Total Cashbacks Received', `${totalCashbacks.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+    ...Object.keys(expensesByCategory).map(cat => [`Expense Category: ${cat}`, `${expensesByCategory[cat].toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]),
+    ['Total Online Expenses', `${totalOnlineExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+    ['Total Cash (Offline) Expenses', `${totalOfflineExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+    ['Grand Total Expenses', `${grandTotalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+    ['Grand Total Money Left', `${grandTotalMoneyLeft.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]
   ];
 
   autoTable(doc, {
     startY: (doc as any).lastAutoTable.finalY + 15,
-    head: [['Financial Summary Metrics', 'Amount']],
+    head: [['Financial Summary Metrics', 'Amount (INR)']],
     body: summaryData,
     theme: 'grid',
     headStyles: {
-      fillColor: [44, 62, 80],
-      textColor: [255, 255, 255]
+      fillColor: [15, 23, 42], // #0f172a Dark slate theme
+      textColor: [56, 189, 248] // #38bdf8 Cyan text
     },
     styles: {
       font: 'helvetica',
-      fontSize: 11,
-      fontStyle: 'bold'
+      fontSize: 8.5,
+      fontStyle: 'bold',
+      cellPadding: { top: 3, right: 4, bottom: 3, left: 4 }
+    },
+    columnStyles: {
+      1: { halign: 'right' }
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245]
+      fillColor: [248, 250, 252]
     },
     didDrawPage: function (data) {
       const doc = data.doc;
-      const str = 'Generated by RupeeMelt Core Engine V5.0';
+      const str = 'Generated by RupeeMelt Core Engine V5.3';
       doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184); // Muted slate color
+      doc.setTextColor(148, 163, 184);
       doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
     }
   });

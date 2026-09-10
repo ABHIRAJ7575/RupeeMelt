@@ -4,6 +4,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SouthIcon from '@mui/icons-material/South';
 import NorthIcon from '@mui/icons-material/North';
 import { MetallicCard } from '../ui/MetallicCard';
+import { CategoryManagerModal } from './CategoryManagerModal';
 
 interface FinancialEngineProps {
   onRecordTransaction: (amountPaisa: number, type: 'inflow' | 'outflow', paymentMethod: 'online' | 'offline', category: string, desc: string) => Promise<void>;
@@ -12,6 +13,35 @@ interface FinancialEngineProps {
   setTripMembers?: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
+const DEFAULT_DEBIT_CATEGORIES: Record<string, string[]> = {
+  'Meteor 350': ['Petrol', 'Speed-Petrol', 'Service', 'Maintenance', 'Wash'],
+  'Pulsar 150': ['Petrol', 'Speed-Petrol', 'Service', 'Repair'],
+  'Eco-Sport': ['Fuel', 'Service', 'Insurance', 'Toll', 'Wash'],
+  'Activa H-Smart': ['Petrol', 'Speed-Petrol', 'Service', 'Repair'],
+  'Family Food/Outing Expenses': ['Groceries', 'Dine Out', 'Delivery'],
+  'Outing': ['Cafe', 'Movies', 'Travel'],
+  'Outing Personal': ['Cafe', 'Movies', 'Travel'],
+  'Cell Phone Recharge': ['Personal', 'Family'],
+  'SIP': ['Mutual Funds', 'Equity'],
+  'Fast-Food': ['Street Food', 'Snacks'],
+  'Fast-Food Personal': ['Street Food', 'Snacks'],
+  'Home Expenses': ['Groceries', 'Bills', 'Repairs'],
+  'Personal Shopping': ['Clothing', 'Electronics', 'Footwear'],
+  'Shopping Personal': ['Clothing', 'Electronics', 'Footwear'],
+  'Family Shopping': ['Clothing', 'Home Goods', 'Gifts'],
+  'Paying Loan': ['EMI', 'Principal'],
+  'Others': ['General', 'Miscellaneous']
+};
+
+const DEFAULT_CREDIT_CATEGORIES: Record<string, string[]> = {
+  'Salary': ['Monthly', 'Bonus'],
+  'Cashback': ['Credit Card', 'UPI Cashback', 'Offer'],
+  'Freelance': ['Project', 'Consulting'],
+  'Cash Deposit': ['ATM', 'Direct'],
+  'Investment Returns': ['Dividends', 'Interest'],
+  'Others': ['Refund', 'Gift']
+};
+
 export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransaction, isEliteVault = false, tripMembers = [], setTripMembers }) => {
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [amountStr, setAmountStr] = useState('');
@@ -19,16 +49,39 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
   const [transactionType, setTransactionType] = useState<'inflow' | 'outflow'>('outflow');
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'offline'>('online');
   const [category, setCategory] = useState('Others');
+  const [subCategory, setSubCategory] = useState('');
 
   const [isHighlight, setIsHighlight] = useState(false);
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+
+  // State initialization with localStorage fallback
+  const [categoriesMap, setCategoriesMap] = useState(() => {
+    const saved = localStorage.getItem('rupee_custom_categories_v1');
+    return saved ? JSON.parse(saved) : { debit: DEFAULT_DEBIT_CATEGORIES, credit: DEFAULT_CREDIT_CATEGORIES };
+  });
+
+  const saveCategories = (updated: { debit: Record<string, string[]>; credit: Record<string, string[]> }) => {
+    setCategoriesMap(updated);
+    localStorage.setItem('rupee_custom_categories_v1', JSON.stringify(updated));
+  };
+
+  const activeCategoriesDict = transactionType === 'outflow' ? categoriesMap.debit : categoriesMap.credit;
+
+  const currentCategories = isEliteVault
+    ? (transactionType === 'inflow' ? ['Trip Fund Collection', 'Refund', 'Others'] : ['Flight/Train', 'Hotel/Stay', 'Food & Drinks', 'Cab/Transport', 'Activities', 'Others'])
+    : Object.keys(activeCategoriesDict);
+
+  const availableSubCategories: string[] = isEliteVault
+    ? ['General']
+    : (activeCategoriesDict[category] || ['General']);
+
+  React.useEffect(() => {
+    setSubCategory('');
+  }, [category]);
 
   // Trip Splitter State
   const [newMemberName, setNewMemberName] = useState('');
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([]);
-
-  const currentCategories = isEliteVault
-    ? (transactionType === 'inflow' ? ['Trip Fund Collection', 'Refund', 'Others'] : ['Flight/Train', 'Hotel/Stay', 'Food & Drinks', 'Cab/Transport', 'Activities', 'Others'])
-    : (transactionType === 'inflow' ? ['Salary', 'Cashback', 'Cash into Bank', 'Others'] : ['Pulsar 150', 'Eco-Sport', 'Meteor 350', 'Activa H-Smart', 'Family Food/Outing Expenses', 'Personal Outing', 'Personal Fast-Food', 'Home Expenses', 'Personal Shopping', 'Family Shopping', 'MBA', 'SIP', 'To Family', 'To Friends', 'To Parents', 'Paying Loan', 'Cell Phone Recharge', 'Others']);
 
   React.useEffect(() => {
     if (transactionType === 'outflow') {
@@ -53,6 +106,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
     setAmountStr('');
     setDescription('');
     setCategory('Others');
+    setSubCategory('');
     setIsHighlight(false);
     setSelectedSplitters([]);
   };
@@ -61,7 +115,12 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
     const amount = parseFloat(amountStr);
     if (!isNaN(amount) && amount > 0) {
       const paisa = Math.round(amount * 100);
+      const chosenSub = subCategory || 'General';
       let finalDescription = isHighlight ? description + (description ? ' ' : '') + '[HIGHLIGHT]' : description;
+
+      if (chosenSub && chosenSub !== 'General') {
+        finalDescription = `[SUB:${chosenSub}] ` + finalDescription;
+      }
 
       if (isEliteVault && selectedSplitters.length > 0) {
         const splitMath = Math.round(amount / selectedSplitters.length);
@@ -309,9 +368,8 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                     if ((sanitized.match(/\./g) || []).length > 1) return;
                     setAmountStr(sanitized);
                   }}
-                  className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors ${
-                    transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
-                  }`}
+                  className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors ${transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
+                    }`}
                   style={{
                     backgroundColor: '#0F131A',
                     border: '1px solid #1E2638',
@@ -327,16 +385,26 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
             </div>
 
             <div className="w-full sm:flex-1">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 px-1">
-                Category
-              </label>
+              <div className="flex items-center justify-between mb-1 px-1">
+                <label className="text-xs font-semibold text-slate-300">Category</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryManagerOpen(true)}
+                  className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-cyan-950/40 border border-cyan-800/50"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Categories
+                </button>
+              </div>
               <div className="relative w-full">
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors appearance-none cursor-pointer ${
-                    transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
-                  }`}
+                  className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors appearance-none cursor-pointer ${transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
+                    }`}
                   style={{
                     backgroundColor: '#0F131A',
                     border: '1px solid #1E2638',
@@ -355,7 +423,7 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                   ))}
                 </select>
                 {/* Down Chevron Icon anchored right */}
-                <div 
+                <div
                   className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400"
                   style={{
                     position: 'absolute',
@@ -372,6 +440,33 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                   ▼
                 </div>
               </div>
+
+              {/* Sub-Category Quick Selector */}
+              {category && availableSubCategories.length > 0 && (
+                <div className="mt-3 flex flex-col gap-1.5 animate-fadeIn">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    Sub-Category
+                  </label>
+                  <div className="flex flex-wrap items-center gap-1.5 py-1">
+                    {availableSubCategories.map((sub: string) => {
+                      const isSelected = subCategory === sub;
+                      return (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setSubCategory(isSelected ? '' : sub)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 ${isSelected
+                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.25)]'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                            }`}
+                        >
+                          {sub}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </Box>
 
@@ -385,9 +480,8 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
                 placeholder="e.g. Flight, Dinner, Shopping"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors ${
-                  transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
-                }`}
+                className={`w-full bg-slate-900/80 border border-slate-700/60 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none transition-colors ${transactionType === 'inflow' ? 'focus:border-emerald-500' : 'focus:border-rose-500'
+                  }`}
                 style={{
                   backgroundColor: '#0F131A',
                   border: '1px solid #1E2638',
@@ -502,6 +596,14 @@ export const FinancialEngine: React.FC<FinancialEngineProps> = ({ onRecordTransa
           </Button>
         </Box>
       )}
+
+      {/* Category & Sub-Category Manager Modal */}
+      <CategoryManagerModal
+        isOpen={isCategoryManagerOpen}
+        onClose={() => setIsCategoryManagerOpen(false)}
+        categoriesMap={categoriesMap}
+        onSave={saveCategories}
+      />
     </MetallicCard>
   );
 };

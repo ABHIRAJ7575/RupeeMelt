@@ -22,6 +22,9 @@ import type { LedgerTransaction } from './lib/supabase';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { MasterLogin } from './components/MasterLogin';
 import { AppLock } from './components/AppLock';
+import { RecentTransactions } from './components/ledger/RecentTransactions';
+
+export { RecentTransactions } from './components/ledger/RecentTransactions';
 
 // Connect the PDF.js worker via external CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -534,18 +537,16 @@ export default function App() {
                   margin: '2px 0'
                 }}>
                   RupeeMelt
-                  <span style={{
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: '0.65rem',
-                    fontWeight: '600',
-                    color: isEliteVault ? '#FACC15' : '#94A3B8',
-                    backgroundColor: 'rgba(30, 38, 56, 0.4)',
-                    border: `1px solid ${isEliteVault ? 'rgba(250, 204, 21, 0.3)' : '#334155'}`,
-                    borderRadius: '9999px',
-                    padding: '2px 8px',
-                    letterSpacing: '1px',
-                    verticalAlign: 'middle'
-                  }}>V5.2</span>
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
+                    style={{
+                      fontFamily: 'JetBrains Mono, monospace',
+                      verticalAlign: 'middle',
+                      marginLeft: '8px'
+                    }}
+                  >
+                    V5.3
+                  </span>
                 </Typography>
 
                 {isEliteVault ? (
@@ -1103,140 +1104,13 @@ export default function App() {
               />
             </Box>
 
-            <Box
-              className="lg:col-span-2 w-full min-w-0 overflow-hidden"
-              sx={{
-                gridColumn: { xs: 'span 1', lg: 'span 2' },
-                width: '100%',
-                minWidth: 0,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2
-              }}
-            >
-              <Typography sx={{ color: '#94A3B8', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                Recent Transactions
-              </Typography>
-              <Box sx={{
-                backgroundColor: '#141923',
-                border: '1px solid #1E2638',
-                borderRadius: '16px',
-                maxHeight: '400px',
-                overflowY: 'auto',
-                p: { xs: 1.5, sm: 2 },
-                '&::-webkit-scrollbar': { width: '6px' },
-                '&::-webkit-scrollbar-track': { background: 'transparent' },
-                '&::-webkit-scrollbar-thumb': { background: '#1E2638', borderRadius: '4px' }
-              }}>
-                {transactions.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(tx => {
-                  const isHighlighted = tx.description?.includes('[HIGHLIGHT]');
-                  const displayDescription = tx.description?.replace('[HIGHLIGHT]', '').replace('[ELITE]', '').trim();
-
-                  return (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between w-full p-3 mb-2 bg-slate-900/60 rounded-xl border border-slate-800"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                        padding: '12px',
-                        marginBottom: '8px',
-                        borderRadius: '12px',
-                        backgroundColor: isHighlighted ? 'rgba(250, 204, 21, 0.08)' : 'rgba(15, 23, 42, 0.6)',
-                        border: isHighlighted ? '1px solid rgba(250, 204, 21, 0.4)' : '1px solid #1E2638',
-                        borderLeft: isHighlighted ? '3px solid #FACC15' : undefined
-                      }}
-                    >
-                      {/* Left side */}
-                      <div className="flex-1 min-w-0 pr-3 truncate" style={{ flex: 1, minWidth: 0, paddingRight: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <Typography
-                          className="truncate"
-                          sx={{
-                            fontFamily: "'Plus Jakarta Sans', sans-serif",
-                            color: '#F8FAFC',
-                            fontWeight: 600,
-                            fontSize: '0.875rem',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {tx.category} {displayDescription ? `- ${displayDescription}` : ''}
-                        </Typography>
-                        <Typography
-                          className="truncate"
-                          sx={{
-                            fontFamily: "'Plus Jakarta Sans', sans-serif",
-                            color: '#64748B',
-                            fontSize: '0.75rem',
-                            mt: '2px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {new Date(tx.created_at).toLocaleDateString()} • {tx.payment_method}
-                        </Typography>
-                      </div>
-
-                      {/* Right side */}
-                      <div className="shrink-0 flex items-center gap-2" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Typography sx={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontWeight: 700,
-                          fontSize: '0.875rem',
-                          whiteSpace: 'nowrap',
-                          color: tx.transaction_direction === 'inflow' 
-                            ? (isEliteVault && !tx.description?.includes('ATM Withdrawal') ? '#3B82F6' : '#10B981') 
-                            : '#F43F5E'
-                        }}>
-                          {tx.transaction_direction === 'inflow' ? '+' : '-'}₹{(tx.amount_paisa / 100).toLocaleString('en-IN')}
-                        </Typography>
-                        <button
-                          onClick={() => handleDeleteTransaction(tx.id)}
-                          className="text-slate-500 hover:text-rose-400 p-1.5 transition-colors"
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#64748b',
-                            padding: '6px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s ease',
-                            borderRadius: '6px'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.color = '#F43F5E';
-                            e.currentTarget.style.transform = 'scale(1.1)';
-                            e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.color = '#64748b';
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.background = 'transparent';
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-                {transactions.length === 0 && (
-                  <Box sx={{ p: 4, textAlign: 'center' }}>
-                    <Typography sx={{ color: '#64748B' }}>No recent transactions.</Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
+            {/* Recent Transactions List Section */}
+            <RecentTransactions
+              transactions={transactions}
+              isIncognito={isIncognito}
+              handleDeleteTransaction={handleDeleteTransaction}
+              isEliteVault={isEliteVault}
+            />
           </Box>
         </Container>
       </Box>

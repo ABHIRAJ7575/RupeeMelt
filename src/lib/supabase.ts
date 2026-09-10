@@ -21,4 +21,6 @@ export interface LedgerTransaction {
   category: string;
   description: string;
   created_at: string;
+  subCategory?: string;
+  sub_category?: string;
 }

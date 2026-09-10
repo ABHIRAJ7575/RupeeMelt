@@ -1,7 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton } from '@mui/material';
-import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 interface AppLockProps {
   onUnlock: () => void;
@@ -9,188 +6,156 @@ interface AppLockProps {
 
 export function AppLock({ onUnlock }: AppLockProps) {
   const [pin, setPin] = useState<string>('');
-  const [errorShake, setErrorShake] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const MASTER_PIN = '0070';
 
   useEffect(() => {
     if (pin.length === 4) {
       if (pin === MASTER_PIN) {
-        onUnlock();
+        setIsSuccess(true);
+        const timer = setTimeout(() => {
+          onUnlock();
+        }, 350);
+        return () => clearTimeout(timer);
       } else {
-        setErrorShake(true);
-        setPin(''); // Instantly clear
-        setTimeout(() => {
-          setErrorShake(false);
-        }, 400); // Wait for shake animation to complete
+        setIsError(true);
+        const timer = setTimeout(() => {
+          setPin('');
+          setIsError(false);
+        }, 450);
+        return () => clearTimeout(timer);
       }
     }
   }, [pin, onUnlock]);
 
-  const handleKeyPress = (digit: string) => {
-    if (pin.length < 4) {
+  const handlePinInput = (digit: string) => {
+    if (pin.length < 4 && !isSuccess && !isError) {
       setPin(prev => prev + digit);
     }
   };
 
-  const handleDelete = () => {
-    setPin(prev => prev.slice(0, -1));
+  const handleDeletePin = () => {
+    if (!isSuccess && !isError) {
+      setPin(prev => prev.slice(0, -1));
+    }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) {
+        handlePinInput(e.key);
+      } else if (e.key === 'Backspace') {
+        handleDeletePin();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pin, isSuccess, isError]);
+
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#0B0E14',
-        p: 2,
-        fontFamily: "'JetBrains Mono', monospace",
+        padding: '1rem',
       }}
     >
-      <Box
-        sx={{
-          background: 'rgba(15, 23, 42, 0.4)',
-          backdropFilter: 'blur(8px)',
-          willChange: 'transform, opacity',
-          border: '1px solid rgba(245, 158, 11, 0.1)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          padding: '40px 32px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-          width: '100%',
-          maxWidth: '400px',
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-          <LockOutlinedIcon sx={{ color: '#FACC15', fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(245, 158, 11, 0.3))' }} />
-          <Typography
-            sx={{
-              color: '#FACC15',
-              fontWeight: 700,
-              letterSpacing: '0.15em',
-              fontSize: '1rem',
-              fontFamily: "'JetBrains Mono', monospace",
-              mt: 1
-            }}
-          >
-            VAULT LOCKED
-          </Typography>
-        </Box>
+      <div className="w-full max-w-xs mx-auto p-6 rounded-3xl bg-slate-900/95 border border-slate-800/90 shadow-[0_25px_60px_rgba(0,0,0,0.7)] flex flex-col items-center select-none">
+        {/* Lock Icon with Subtle Ambient Glow */}
+        <div className="relative mb-3">
+          <div
+            className={`absolute -inset-2 rounded-full blur-md opacity-30 transition-all duration-300 ${
+              isError ? 'bg-rose-500' : isSuccess ? 'bg-emerald-400' : 'bg-amber-400'
+            }`}
+          />
+          <div className="relative text-3xl">
+            {isSuccess ? '🔓' : '🔒'}
+          </div>
+        </div>
+
+        <h2 className="text-[11px] font-mono font-bold tracking-[0.2em] uppercase mb-6 transition-colors duration-200">
+          {isError ? (
+            <span className="text-rose-400">INCORRECT PIN</span>
+          ) : isSuccess ? (
+            <span className="text-emerald-400">UNLOCKED</span>
+          ) : (
+            <span className="text-amber-400">VAULT LOCKED</span>
+          )}
+        </h2>
 
         {/* PIN Dots */}
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            gap: 2, 
-            my: 2,
-            animation: errorShake ? 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both' : 'none',
-            '@keyframes shake': {
-              '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
-              '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
-              '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
-              '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
-            }
+        <div className={`flex items-center gap-3.5 mb-8 ${isError ? 'animate-vault-shake' : ''}`}>
+          {[0, 1, 2, 3].map((index) => {
+            const isFilled = pin.length > index;
+            return (
+              <div
+                key={index}
+                className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                  isFilled
+                    ? isError
+                      ? 'bg-rose-500 shadow-[0_0_10px_#f43f5e] animate-dot-glow'
+                      : isSuccess
+                      ? 'bg-emerald-400 shadow-[0_0_10px_#34d399] animate-dot-glow'
+                      : 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-dot-glow'
+                    : 'bg-slate-800/80 border border-slate-700/60'
+                }`}
+              />
+            );
+          })}
+        </div>
+
+        <div 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 64px)', 
+            gap: '16px', 
+            justifyContent: 'center',
+            margin: '0 auto' 
           }}
         >
-          {[0, 1, 2, 3].map((index) => (
-            <Box
-              key={index}
-              sx={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                backgroundColor: pin.length > index ? '#FACC15' : 'rgba(148, 163, 184, 0.2)',
-                boxShadow: pin.length > index ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none',
-                transition: 'none'
-              }}
-            />
-          ))}
-        </Box>
-
-        {/* Numpad Grid */}
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 2,
-          width: '100%',
-          maxWidth: '280px',
-        }}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-            <Button
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
+            <button
               key={num}
-              onClick={() => handleKeyPress(num.toString())}
-              disableRipple
-              sx={{
-                height: '72px',
-                borderRadius: '50%',
-                fontSize: '1.5rem',
-                fontWeight: 600,
-                color: '#F8FAFC',
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                background: 'rgba(30, 38, 56, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                transition: 'transform 0.1s ease, background-color 0.1s',
-                '&:hover': {
-                  background: 'rgba(245, 158, 11, 0.1)',
-                  borderColor: 'rgba(245, 158, 11, 0.3)',
-                },
-                '&:active': {
-                  transform: 'scale(0.92)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
+              type="button"
+              onClick={() => handlePinInput(num)}
+              style={{ width: '64px', height: '64px' }}
+              className="rounded-full bg-slate-900/90 border border-slate-800 text-white text-xl font-medium flex items-center justify-center active:bg-slate-800"
             >
               {num}
-            </Button>
+            </button>
           ))}
-          <Box /> {/* Empty cell for grid alignment */}
-          <Button
-            onClick={() => handleKeyPress('0')}
-            disableRipple
-            sx={{
-              height: '72px',
-              borderRadius: '50%',
-              fontSize: '1.5rem',
-              fontWeight: 600,
-              color: '#F8FAFC',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              background: 'rgba(30, 38, 56, 0.3)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              transition: 'transform 0.1s ease, background-color 0.1s',
-              '&:hover': {
-                background: 'rgba(245, 158, 11, 0.1)',
-                borderColor: 'rgba(245, 158, 11, 0.3)',
-              },
-              '&:active': {
-                transform: 'scale(0.92)',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
+
+          {/* Empty bottom-left placeholder */}
+          <div style={{ width: '64px', height: '64px' }} />
+
+          {/* 0 Button */}
+          <button
+            type="button"
+            onClick={() => handlePinInput('0')}
+            style={{ width: '64px', height: '64px' }}
+            className="rounded-full bg-slate-900/90 border border-slate-800 text-white text-xl font-medium flex items-center justify-center active:bg-slate-800"
           >
             0
-          </Button>
-          <IconButton
-            onClick={handleDelete}
-            disableRipple
-            sx={{
-              color: '#94A3B8',
-              transition: 'transform 0.1s ease, background-color 0.1s',
-              '&:hover': { color: '#F43F5E', background: 'rgba(244, 63, 94, 0.1)' },
-              '&:active': {
-                transform: 'scale(0.92)',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
+          </button>
+
+          {/* Delete Button */}
+          <button
+            type="button"
+            onClick={handleDeletePin}
+            style={{ width: '64px', height: '64px' }}
+            className="rounded-full flex items-center justify-center text-slate-400 active:text-white"
           >
-            <BackspaceOutlinedIcon />
-          </IconButton>
-        </Box>
-      </Box>
-    </Box>
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414A2 2 0 0110.828 5H20a2 2 0 012 2v10a2 2 0 01-2 2h-9.172a2 2 0 01-1.414-.586L3 12z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

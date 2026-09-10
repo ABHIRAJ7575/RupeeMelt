@@ -754,3 +754,342 @@ body {
 .h-1\.5 {
   height: 0.375rem !important;
 }
+
+/* Flex and alignment utilities */
+.flex-col {
+  flex-direction: column !important;
+}
+
+.items-end {
+  align-items: flex-end !important;
+}
+
+/* Passbook & Incognito Masking Utilities */
+.blur-sm {
+  filter: blur(4px) !important;
+}
+
+.blur-sm:hover {
+  filter: blur(0px) !important;
+}
+
+.text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 0.875rem !important;
+}
+
+.p-1 {
+  padding: 0.25rem !important;
+}
+
+@media (min-width: 640px) {
+  .sm\:text-sm {
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+  }
+}
+
+/* Sub-category Pill Utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.mt-3 {
+  margin-top: 0.75rem !important;
+}
+
+.bg-cyan-500\/20 {
+  background-color: rgba(6, 182, 212, 0.2) !important;
+}
+
+.text-cyan-300 {
+  color: #67e8f9 !important;
+}
+
+.text-cyan-400\/90 {
+  color: rgba(34, 211, 238, 0.9) !important;
+}
+
+.text-slate-600 {
+  color: #475569 !important;
+}
+
+.hover\:text-slate-200:hover {
+  color: #e2e8f0 !important;
+}
+
+/* Category Manager & Version Badge Utilities */
+.text-cyan-400 {
+  color: #22d3ee !important;
+}
+
+.hover\:text-cyan-300:hover {
+  color: #67e8f9 !important;
+}
+
+.bg-cyan-500\/10 {
+  background-color: rgba(6, 182, 212, 0.1) !important;
+}
+
+.border-cyan-500\/30 {
+  border-color: rgba(6, 182, 212, 0.3) !important;
+}
+
+.bg-cyan-950\/40 {
+  background-color: rgba(8, 47, 73, 0.4) !important;
+}
+
+.border-cyan-800\/50 {
+  border-color: rgba(21, 94, 117, 0.5) !important;
+}
+
+.py-0\.5 {
+  padding-top: 0.125rem !important;
+  padding-bottom: 0.125rem !important;
+}
+
+.px-1\.5 {
+  padding-left: 0.375rem !important;
+  padding-right: 0.375rem !important;
+}
+
+.w-3 {
+  width: 0.75rem !important;
+}
+
+.h-3 {
+  height: 0.75rem !important;
+}
+
+/* ==========================================================================
+   Vault Polish & Micro-Animations
+   ========================================================================== */
+
+@keyframes dotGlow {
+  0% { transform: scale(0.85); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@keyframes vaultShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-dot-glow {
+  animation: dotGlow 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-vault-shake {
+  animation: vaultShake 0.35s ease-in-out;
+}
+
+.max-w-xs {
+  max-width: 20rem !important;
+}
+
+.p-6 {
+  padding: 1.5rem !important;
+}
+
+.rounded-3xl {
+  border-radius: 1.5rem !important;
+}
+
+.bg-slate-900\/95 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+.border-slate-800\/90 {
+  border-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+.shadow-\[0_25px_60px_rgba\(0\,0\,0\,0\.7\)\] {
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7) !important;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem !important;
+}
+
+.-inset-2 {
+  top: -0.5rem !important;
+  right: -0.5rem !important;
+  bottom: -0.5rem !important;
+  left: -0.5rem !important;
+}
+
+.blur-md {
+  filter: blur(12px) !important;
+}
+
+.opacity-30 {
+  opacity: 0.3 !important;
+}
+
+.transition-all {
+  transition-property: all !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.duration-300 {
+  transition-duration: 300ms !important;
+}
+
+.duration-200 {
+  transition-duration: 200ms !important;
+}
+
+.duration-100 {
+  transition-duration: 100ms !important;
+}
+
+.bg-rose-500 {
+  background-color: #f43f5e !important;
+}
+
+.bg-emerald-400 {
+  background-color: #34d399 !important;
+}
+
+.bg-amber-400 {
+  background-color: #fbbf24 !important;
+}
+
+.text-3xl {
+  font-size: 1.875rem !important;
+  line-height: 2.25rem !important;
+}
+
+.text-\[11px\] {
+  font-size: 11px !important;
+  line-height: 1rem !important;
+}
+
+.tracking-\[0\.2em\] {
+  letter-spacing: 0.2em !important;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem !important;
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke !important;
+}
+
+.text-rose-400 {
+  color: #fb7185 !important;
+}
+
+.text-emerald-400 {
+  color: #34d399 !important;
+}
+
+.text-amber-400 {
+  color: #fbbf24 !important;
+}
+
+.gap-3\.5 {
+  gap: 0.875rem !important;
+}
+
+.mb-8 {
+  margin-bottom: 2rem !important;
+}
+
+.shadow-\[0_0_10px_\#f43f5e\] {
+  box-shadow: 0 0 10px #f43f5e !important;
+}
+
+.shadow-\[0_0_10px_\#34d399\] {
+  box-shadow: 0 0 10px #34d399 !important;
+}
+
+.bg-cyan-400 {
+  background-color: #22d3ee !important;
+}
+
+.shadow-\[0_0_10px_rgba\(34\,211\,238\,0\.9\)\] {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.9) !important;
+}
+
+.bg-slate-800\/80 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+.border-slate-700\/60 {
+  border-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+.w-16 {
+  width: 4rem !important;
+}
+
+.h-16 {
+  height: 4rem !important;
+}
+
+.text-slate-500 {
+  color: #64748b !important;
+}
+
+.hover\:text-rose-400:hover {
+  color: #fb7185 !important;
+}
+
+.active\:text-rose-300:active {
+  color: #fda4af !important;
+}
+
+.bg-slate-800\/60 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+.hover\:bg-slate-800:hover {
+  background-color: #1e293b !important;
+}
+
+.hover\:border-slate-600:hover {
+  border-color: #475569 !important;
+}
+
+.active\:bg-cyan-500\/20:active {
+  background-color: rgba(6, 182, 212, 0.2) !important;
+}
+
+.active\:border-cyan-400:active {
+  border-color: #22d3ee !important;
+}
+
+.active\:text-cyan-300:active {
+  color: #67e8f9 !important;
+}
+
+.w-5 {
+  width: 1.25rem !important;
+}
+
+.h-5 {
+  height: 1.25rem !important;
+}
+
+.bg-slate-900\/90 {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.active\:bg-slate-800:active {
+  background-color: #1e293b !important;
+}
+
+.active\:text-white:active {
+  color: #ffffff !important;
+}
+
+
