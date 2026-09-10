@@ -75,8 +75,46 @@ export function AppLock({ onUnlock }: AppLockProps) {
           userSelect: 'none' 
         }}
       >
-        {/* Embedded Fail-Safe Keyframes */}
+        {/* 1. DEFINE SHARED METALLIC STYLES & SVG GRADIENTS */}
         <style>{`
+          /* Brushed Titanium / Liquid Chrome Gradient */
+          .metallic-text {
+            background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 25%, #94A3B8 55%, #CBD5E1 85%, #64748B 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+          }
+
+          /* Metallic Text for Access Denied State */
+          .metallic-text-error {
+            background: linear-gradient(180deg, #FECDD3 0%, #FB7185 35%, #E11D48 70%, #9F1239 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.4));
+          }
+
+          /* Cinematic Unfold Animation for Welcome Title */
+          @keyframes cinematicTitleFlip {
+            0% {
+              opacity: 0;
+              transform: perspective(600px) rotateX(65deg) translateY(-8px) scale(0.92);
+              filter: blur(4px);
+              letter-spacing: 0.4em;
+            }
+            100% {
+              opacity: 1;
+              transform: perspective(600px) rotateX(0deg) translateY(0) scale(1);
+              filter: blur(0px);
+              letter-spacing: 0.22em;
+            }
+          }
+
+          .metallic-cinematic-title {
+            animation: cinematicTitleFlip 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transform-origin: center bottom;
+            display: inline-block;
+          }
+
           @keyframes vaultJitter {
             0%, 100% { transform: translateX(0); }
             20% { transform: translateX(-9px); }
@@ -89,79 +127,50 @@ export function AppLock({ onUnlock }: AppLockProps) {
             50% { transform: translateY(-4px) rotate(-6deg); }
             100% { transform: translateY(-5px) rotate(-12deg); }
           }
-          @keyframes cinematicTitleFlip {
-            0% {
-              opacity: 0;
-              transform: perspective(600px) rotateX(65deg) translateY(-8px) scale(0.92);
-              filter: blur(5px);
-              letter-spacing: 0.45em;
-            }
-            60% {
-              filter: blur(0px);
-            }
-            100% {
-              opacity: 1;
-              transform: perspective(600px) rotateX(0deg) translateY(0) scale(1);
-              filter: blur(0px);
-              letter-spacing: 0.22em;
-            }
-          }
           .vault-jitter { animation: vaultJitter 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
           .shackle-animated { animation: shacklePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform-origin: right top; }
-          .metallic-cinematic-title {
-            background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 35%, #94A3B8 75%, #CBD5E1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 1px 12px rgba(255, 255, 255, 0.22);
-            animation: cinematicTitleFlip 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transform-origin: center bottom;
-            display: inline-block;
-          }
         `}</style>
 
-        {/* Dynamic Padlock Icon */}
-        <div className="relative mb-3 transition-transform duration-300">
-          <div 
-            style={{
-              position: 'absolute',
-              inset: '-8px',
-              borderRadius: '9999px',
-              filter: 'blur(14px)',
-              opacity: 0.35,
-              transition: 'all 0.3s ease',
-              backgroundColor: isError ? '#f43f5e' : isSuccess ? '#10b981' : '#f59e0b'
-            }}
-          />
+        {/* Hidden SVG Gradient Definition for Icons */}
+        <svg width="0" height="0" className="absolute pointer-events-none">
+          <defs>
+            <linearGradient id="metallicIconGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="25%" stopColor="#E2E8F0" />
+              <stop offset="55%" stopColor="#94A3B8" />
+              <stop offset="85%" stopColor="#CBD5E1" />
+              <stop offset="100%" stopColor="#64748B" />
+            </linearGradient>
+            <linearGradient id="metallicErrorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FECDD3" />
+              <stop offset="40%" stopColor="#FB7185" />
+              <stop offset="100%" stopColor="#E11D48" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        {/* Clean Metallic Lock Icon (No Backlight Aura) */}
+        <div className="mb-3 transition-transform duration-300">
           <svg 
-            style={{ 
-              width: '46px', 
-              height: '46px',
-              color: isError ? '#f43f5e' : isSuccess ? '#34d399' : '#fbbf24',
-              transition: 'color 0.25s ease'
-            }} 
-            className="relative mx-auto" 
+            style={{ width: '46px', height: '46px' }} 
+            className="mx-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]" 
             fill="none" 
             viewBox="0 0 24 24" 
-            stroke="currentColor" 
+            stroke={isError ? "url(#metallicErrorGrad)" : "url(#metallicIconGrad)"} 
             strokeWidth={2}
           >
-            {/* Animated Shackle */}
             <path 
               className={isSuccess ? 'shackle-animated' : ''}
               strokeLinecap="round" 
               strokeLinejoin="round" 
-              d={isSuccess 
-                ? "M8 11V7a4 4 0 118 0" 
-                : "M8 11V7a4 4 0 018 0v4"
-              } 
+              d={isSuccess ? "M8 11V7a4 4 0 118 0" : "M8 11V7a4 4 0 018 0v4"} 
             />
-            {/* Padlock Body */}
             <rect x="5" y="11" width="14" height="10" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="12" cy="16" r="1" fill="currentColor" />
+            <circle cx="12" cy="16" r="1" fill={isError ? "url(#metallicErrorGrad)" : "url(#metallicIconGrad)"} />
           </svg>
         </div>
 
-        {/* Vault State Banner */}
+        {/* 3. METALLIC TEXT BANNER (Locked / Denied / Welcome) */}
         <div 
           style={{ 
             height: '24px', 
@@ -172,15 +181,15 @@ export function AppLock({ onUnlock }: AppLockProps) {
           }}
         >
           {isSuccess ? (
-            <span className="metallic-cinematic-title font-mono text-[11px] font-extrabold uppercase select-none">
+            <span className="metallic-text metallic-cinematic-title font-mono text-[11px] font-extrabold uppercase select-none tracking-[0.22em]">
               WELCOME BACK, ABHIRAJ
             </span>
           ) : isError ? (
-            <span className="text-rose-400 font-mono text-[11px] font-bold tracking-[0.28em] uppercase">
+            <span className="metallic-text-error font-mono text-[11px] font-bold tracking-[0.28em] uppercase select-none">
               ACCESS DENIED
             </span>
           ) : (
-            <span className="text-amber-400 font-mono text-[11px] font-bold tracking-[0.28em] uppercase">
+            <span className="metallic-text font-mono text-[11px] font-bold tracking-[0.28em] uppercase select-none">
               VAULT LOCKED
             </span>
           )}
@@ -221,7 +230,7 @@ export function AppLock({ onUnlock }: AppLockProps) {
           })}
         </div>
 
-        {/* Locked 3-Column Grid (78px Circular Keys) */}
+        {/* 4. METALLIC NUMERIC KEYPAD & GHOST BACKSPACE */}
         <div 
           style={{ 
             display: 'grid', 
@@ -235,27 +244,31 @@ export function AppLock({ onUnlock }: AppLockProps) {
               key={num}
               type="button"
               onClick={() => handleDigit(num)}
-              style={{ width: '78px', height: '78px', fontSize: '1.75rem' }}
-              className="rounded-full bg-slate-800/60 border border-slate-700/60 text-slate-100 font-medium flex items-center justify-center transition-all duration-100 hover:border-cyan-500/40 hover:text-white active:scale-95 active:bg-cyan-500/15 active:border-cyan-400 cursor-pointer shadow-md"
+              style={{ width: '78px', height: '78px' }}
+              className="rounded-full bg-slate-800/60 border border-slate-700/60 flex items-center justify-center transition-all duration-100 hover:border-slate-500 hover:bg-slate-800/90 active:scale-95 active:border-cyan-400 cursor-pointer shadow-md"
             >
-              {num}
+              <span className="metallic-text text-[1.75rem] font-semibold leading-none pointer-events-none">
+                {num}
+              </span>
             </button>
           ))}
 
-          {/* Row 4: Placeholder */}
+          {/* Row 4: Empty Slot */}
           <div style={{ width: '78px', height: '78px' }} />
 
-          {/* Row 4: 0 Key */}
+          {/* Row 4: Number 0 */}
           <button
             type="button"
             onClick={() => handleDigit('0')}
-            style={{ width: '78px', height: '78px', fontSize: '1.75rem' }}
-            className="rounded-full bg-slate-800/60 border border-slate-700/60 text-slate-100 font-medium flex items-center justify-center transition-all duration-100 hover:border-cyan-500/40 hover:text-white active:scale-95 active:bg-cyan-500/15 active:border-cyan-400 cursor-pointer shadow-md"
+            style={{ width: '78px', height: '78px' }}
+            className="rounded-full bg-slate-800/60 border border-slate-700/60 flex items-center justify-center transition-all duration-100 hover:border-slate-500 hover:bg-slate-800/90 active:scale-95 active:border-cyan-400 cursor-pointer shadow-md"
           >
-            0
+            <span className="metallic-text text-[1.75rem] font-semibold leading-none pointer-events-none">
+              0
+            </span>
           </button>
 
-          {/* Row 4: Ghost Delete Key */}
+          {/* Row 4: Metallic Ghost Delete Key */}
           <button
             type="button"
             onClick={handleDeletePin}
@@ -266,14 +279,15 @@ export function AppLock({ onUnlock }: AppLockProps) {
               border: 'none' 
             }}
             aria-label="Delete digit"
-            className="rounded-full flex items-center justify-center text-slate-400 hover:text-rose-400 active:text-rose-300 active:scale-90 transition-all duration-100 cursor-pointer"
+            className="rounded-full flex items-center justify-center active:scale-90 transition-all duration-100 cursor-pointer"
           >
             <svg 
               style={{ width: '32px', height: '32px' }} 
               fill="none" 
               viewBox="0 0 24 24" 
-              stroke="currentColor" 
+              stroke="url(#metallicIconGrad)" 
               strokeWidth={2}
+              className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414A2 2 0 0110.828 5H20a2 2 0 012 2v10a2 2 0 01-2 2h-9.172a2 2 0 01-1.414-.586L3 12z" />
             </svg>
