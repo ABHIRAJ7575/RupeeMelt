@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import type { LedgerTransaction } from '../../lib/supabase';
+import { isInternalTransfer, getTransferMetadata, getTransactionSubCategory } from '../../lib/ledgerUtils';
 
 export interface RecentTransactionsProps {
   transactions: LedgerTransaction[];
@@ -16,12 +17,19 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   handleDeleteTransaction,
   onDeleteTransaction,
 }) => {
-  const handleDelete = (id: string) => {
-    if (handleDeleteTransaction) {
-      handleDeleteTransaction(id);
-    } else if (onDeleteTransaction) {
-      onDeleteTransaction(id);
-    }
+  const handleDelete = (txOrId: any) => {
+    const ids: string[] = typeof txOrId === 'object' && txOrId?.linkedIds?.length
+      ? txOrId.linkedIds
+      : [typeof txOrId === 'string' ? txOrId : txOrId?.id];
+
+    ids.forEach((id: string) => {
+      if (!id) return;
+      if (handleDeleteTransaction) {
+        handleDeleteTransaction(id);
+      } else if (onDeleteTransaction) {
+        onDeleteTransaction(id);
+      }
+    });
   };
 
   // Sort chronologically ascending to compute cumulative ledger balance
@@ -36,7 +44,13 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
   chronological.forEach((tx: any) => {
     const amt = Number(tx.amount !== undefined ? tx.amount : (tx.amount_paisa / 100)) || 0;
-    if (tx.type === 'credit' || tx.type === 'inflow' || tx.transaction_direction === 'inflow') {
+    const isTransfer = isInternalTransfer(tx);
+
+    if (isTransfer) {
+      // Transfers shift money between modes without altering global net worth
+      currentTotal += 0;
+    } else if (tx.type === 'credit' || tx.type === 'inflow' || tx.transaction_direction === 'inflow') {
+      // Cashback, salary, refunds, etc. MUST add to the balance
       currentTotal += amt;
     } else {
       currentTotal -= amt;
@@ -44,23 +58,59 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     balanceMap.set(tx.id, currentTotal);
   });
 
-  // Map runningBalance and subCategory onto each transaction and sort newest first for display
-  const displayTransactions = [...transactions]
-    .sort((a: any, b: any) => {
-      const timeA = new Date(a.date || a.timestamp || a.created_at).getTime();
-      const timeB = new Date(b.date || b.timestamp || b.created_at).getTime();
-      return timeB - timeA;
-    })
-    .map((tx: any) => {
-      const subCatMatch = tx.description?.match(/\[SUB:([^\]]+)\]/);
-      const subCategory = tx.subCategory || tx.sub_category || (subCatMatch ? subCatMatch[1] : undefined);
-      return {
-        ...tx,
-        subCategory,
-        amount: tx.amount !== undefined ? tx.amount : (tx.amount_paisa / 100),
-        runningBalance: balanceMap.get(tx.id) ?? 0,
-      };
+  // Sort newest first for display
+  const sortedNewestFirst = [...transactions].sort((a: any, b: any) => {
+    const timeA = new Date(a.date || a.timestamp || a.created_at).getTime();
+    const timeB = new Date(b.date || b.timestamp || b.created_at).getTime();
+    return timeB - timeA;
+  });
+
+  // Consolidate paired transfer transactions for unified display
+  const displayTransactions = sortedNewestFirst.reduce((acc: any[], current: any) => {
+    const subCategory = getTransactionSubCategory(current);
+    const isTransfer = isInternalTransfer(current);
+    const currentAmt = Number(current.amount !== undefined ? current.amount : (current.amount_paisa / 100)) || 0;
+    const currentTime = new Date(current.date || current.timestamp || current.created_at).getTime();
+    const currentDateStr = new Date(current.date || current.timestamp || current.created_at).toLocaleDateString();
+
+    // If this is the second half of an existing transfer pair in the same batch/date, skip rendering it as a second line
+    if (isTransfer) {
+      const existingPair = acc.find((t: any) => {
+        if (!t.isTransfer) return false;
+        const tAmt = Number(t.amount !== undefined ? t.amount : (t.amount_paisa / 100)) || 0;
+        if (tAmt !== currentAmt) return false;
+
+        const tTime = new Date(t.date || t.timestamp || t.created_at).getTime();
+        const tDateStr = new Date(t.date || t.timestamp || t.created_at).toLocaleDateString();
+
+        return (
+          t.date === current.date ||
+          tDateStr === currentDateStr ||
+          Math.abs(tTime - currentTime) <= 15000
+        );
+      });
+
+      if (existingPair) {
+        // Link the current ID to the existing pair for synchronized deletion
+        existingPair.linkedIds = Array.from(new Set([...(existingPair.linkedIds || [existingPair.id]), current.id]));
+        return acc;
+      }
+    }
+
+    const transferMeta = isTransfer ? getTransferMetadata(current) : null;
+
+    acc.push({
+      ...current,
+      subCategory,
+      isTransfer,
+      transferMeta,
+      linkedIds: [current.id],
+      amount: currentAmt,
+      runningBalance: balanceMap.get(current.id) ?? 0,
     });
+
+    return acc;
+  }, []);
 
   return (
     <Box
@@ -98,6 +148,9 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             .replace('[ELITE]', '')
             .trim();
 
+          const isTransfer = tx.isTransfer;
+          const transferMeta = tx.transferMeta;
+
           return (
             <div
               key={tx.id}
@@ -111,24 +164,42 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 marginBottom: '8px',
                 borderRadius: '12px',
                 backgroundColor: isHighlighted ? 'rgba(250, 204, 21, 0.08)' : 'rgba(15, 23, 42, 0.6)',
-                border: isHighlighted ? '1px solid rgba(250, 204, 21, 0.4)' : '1px solid #1E2638',
+                border: isHighlighted
+                  ? '1px solid rgba(250, 204, 21, 0.4)'
+                  : isTransfer
+                  ? '1px solid rgba(56, 189, 248, 0.25)'
+                  : '1px solid #1E2638',
                 borderLeft: isHighlighted ? '3px solid #FACC15' : undefined
               }}
             >
               {/* Left side */}
               <div className="flex-1 min-w-0 pr-3 truncate" style={{ flex: 1, minWidth: 0, paddingRight: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
-                  <span className="font-medium text-slate-300 truncate">{tx.category}</span>
-                  {tx.subCategory && tx.subCategory !== 'General' && (
-                    <>
-                      <span className="text-slate-600">•</span>
-                      <span className="text-cyan-400/90 font-medium truncate">{tx.subCategory}</span>
-                    </>
-                  )}
-                  {displayDescription && (
-                    <span className="text-slate-400 truncate text-xs">- {displayDescription}</span>
-                  )}
-                </div>
+                {isTransfer && transferMeta ? (
+                  <div className="flex items-center gap-1.5 text-xs truncate">
+                    <span className="font-semibold text-cyan-300 shrink-0 whitespace-nowrap">
+                      {transferMeta.primaryLabel}
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-cyan-950/70 border border-cyan-800/60 text-cyan-300 shrink-0">
+                      {transferMeta.flowDirection}
+                    </span>
+                    {displayDescription && (
+                      <span className="text-slate-400 truncate text-xs min-w-0">- {displayDescription}</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
+                    <span className="font-medium text-slate-300 truncate">{tx.category}</span>
+                    {tx.subCategory && tx.subCategory !== 'General' && (
+                      <>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-cyan-400/90 font-medium truncate">{tx.subCategory}</span>
+                      </>
+                    )}
+                    {displayDescription && (
+                      <span className="text-slate-400 truncate text-xs">- {displayDescription}</span>
+                    )}
+                  </div>
+                )}
                 <Typography
                   className="truncate"
                   sx={{
@@ -141,7 +212,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  {new Date(tx.created_at || tx.date || tx.timestamp).toLocaleDateString()} • {tx.payment_method}
+                  {new Date(tx.created_at || tx.date || tx.timestamp).toLocaleDateString()} • {isTransfer && transferMeta ? transferMeta.flowDirection : tx.payment_method}
                 </Typography>
               </div>
 
@@ -149,24 +220,33 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
               <div className="shrink-0 flex items-center gap-3">
                 <div className="flex flex-col items-end">
                   {/* Transaction Amount */}
-                  <span className={`font-mono font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 ${
-                    isCredit ? 'text-emerald-400' : 'text-rose-400'
-                  } ${isIncognito ? 'blur-sm select-none' : ''}`}>
-                    {isCredit ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
+                  {isTransfer ? (
+                    <span className={`font-mono font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 text-cyan-300 flex items-center gap-1 ${
+                      isIncognito ? 'blur-sm select-none' : ''
+                    }`}>
+                      <span className="text-xs text-cyan-400 font-bold" aria-hidden="true">⇄</span>
+                      <span>₹{Number(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </span>
+                  ) : (
+                    <span className={`font-mono font-bold text-xs sm:text-sm tracking-tight transition-all duration-200 ${
+                      isCredit ? 'text-emerald-400' : 'text-rose-400'
+                    } ${isIncognito ? 'blur-sm select-none' : ''}`}>
+                      {isCredit ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  )}
 
                   {/* Passbook Running Balance */}
                   <span className={`text-[10px] font-mono text-slate-400 tracking-tight transition-all duration-200 ${
                     isIncognito ? 'blur-sm select-none' : ''
                   }`}>
-                    Bal: ₹{Number(tx.runningBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    Bal: ₹{Number(tx.runningBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
                 {/* Delete Action Button */}
                 <button
                   type="button"
-                  onClick={() => handleDelete(tx.id)}
+                  onClick={() => handleDelete(tx)}
                   className="text-slate-500 hover:text-rose-400 transition-colors p-1"
                   aria-label="Delete transaction"
                   style={{

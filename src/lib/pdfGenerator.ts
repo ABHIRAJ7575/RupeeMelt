@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { LedgerTransaction } from './supabase';
+import { isInternalTransfer, getTransferMetadata } from './ledgerUtils';
 
 export const generateLedgerReport = (roomName: string, transactions: LedgerTransaction[]) => {
   const doc = new jsPDF();
@@ -27,7 +28,15 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   const tableRows = sortedTx.map((tx: any) => {
     const amt = Number(tx.amount !== undefined ? tx.amount : (tx.amount_paisa / 100)) || 0;
     const isCredit = tx.type === 'credit' || tx.type === 'inflow' || tx.transaction_direction === 'inflow';
-    cumulativeBal = isCredit ? cumulativeBal + amt : cumulativeBal - amt;
+    const isTransfer = isInternalTransfer(tx);
+
+    if (isTransfer) {
+      // 0-delta: internal transfers shift funds between payment modes without changing net cumulative balance
+    } else if (isCredit) {
+      cumulativeBal += amt;
+    } else {
+      cumulativeBal -= amt;
+    }
 
     const rawDate = tx.date || tx.timestamp || tx.created_at;
     const dateStr = tx.date || (rawDate ? new Date(rawDate).toLocaleDateString('en-IN') : 'N/A');
@@ -36,12 +45,20 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
       .replace(/\[ELITE\]/g, '')
       .trim();
 
+    const transferMeta = isTransfer ? getTransferMetadata(tx) : null;
+    const typeLabel = isTransfer ? 'TRANSFER' : (isCredit ? 'CREDIT' : 'DEBIT');
+    const amountStr = isTransfer
+      ? amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : `${isCredit ? '+ ' : '- '}${amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const displayCategory = isTransfer && transferMeta ? transferMeta.primaryLabel : (tx.category || 'General');
+
     return [
       dateStr,
       desc || 'Transaction',
-      tx.category || 'General',
-      isCredit ? 'CREDIT' : 'DEBIT',
-      `${isCredit ? '+ ' : '- '}${amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      displayCategory,
+      typeLabel,
+      amountStr,
       `${cumulativeBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     ];
   });
@@ -95,7 +112,9 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
       }
       if (data.section === 'body') {
         const rawRow = data.row.raw as any[];
-        const isCredit = rawRow && rawRow[3] === 'CREDIT';
+        const typeStr = rawRow && rawRow[3];
+        const isTransfer = typeStr === 'TRANSFER';
+        const isCredit = typeStr === 'CREDIT';
 
         // Check for highlighted transactions in original record
         const descText = rawRow && rawRow[1] ? rawRow[1].toString() : '';
@@ -104,9 +123,13 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
           data.cell.styles.fillColor = [254, 240, 138]; // #FEF08A Pale gold
           data.cell.styles.textColor = [0, 0, 0];
         } else {
-          // Style credit amounts with soft green tint and debit amounts with soft red tint
+          // Style credit amounts with soft green tint, debit amounts with soft red tint, and transfer with neutral cyan tint
           if (data.column.index === 4) {
-            if (isCredit) {
+            if (isTransfer) {
+              data.cell.styles.textColor = [14, 116, 144]; // Cyan-700
+              data.cell.styles.fillColor = [240, 253, 250]; // Cyan-50
+              data.cell.styles.fontStyle = 'bold';
+            } else if (isCredit) {
               data.cell.styles.textColor = [5, 150, 105]; // Emerald-600
               data.cell.styles.fillColor = [236, 253, 245]; // Emerald-50 soft green tint
               data.cell.styles.fontStyle = 'bold';
@@ -116,7 +139,11 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
               data.cell.styles.fontStyle = 'bold';
             }
           } else if (data.column.index === 3) {
-            if (isCredit) {
+            if (isTransfer) {
+              data.cell.styles.textColor = [14, 116, 144]; // Cyan-700
+              data.cell.styles.fillColor = [240, 253, 250];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (isCredit) {
               data.cell.styles.textColor = [5, 150, 105];
               data.cell.styles.fontStyle = 'bold';
             } else {
@@ -145,6 +172,12 @@ export const generateLedgerReport = (roomName: string, transactions: LedgerTrans
   const expensesByCategory: Record<string, number> = {};
 
   transactions.forEach((t: any) => {
+    const isTransfer = isInternalTransfer(t);
+    if (isTransfer) {
+      // Internal transfers are neutral asset reallocations, not external revenue or expense
+      return;
+    }
+
     const amount = Number(t.amount !== undefined ? t.amount : (t.amount_paisa / 100)) || 0;
     const isCredit = t.type === 'credit' || t.type === 'inflow' || t.transaction_direction === 'inflow';
     if (isCredit) {

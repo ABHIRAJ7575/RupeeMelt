@@ -23,4 +23,17 @@ export interface LedgerTransaction {
   created_at: string;
   subCategory?: string;
   sub_category?: string;
+  isTransfer?: boolean;
+  is_transfer?: boolean;
+  sourceMode?: string;
+  source_mode?: string;
+  targetMode?: string;
+  target_mode?: string;
+  type?: string;
+  amount?: number;
+  date?: string;
+  timestamp?: string;
+  note?: string;
+  runningBalance?: number;
 }
+

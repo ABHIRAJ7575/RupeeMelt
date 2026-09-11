@@ -19,6 +19,7 @@ import { FinancialEngine } from './components/ledger/FinancialEngine';
 import { generateLedgerReport } from './lib/pdfGenerator';
 import { supabase } from './lib/supabase';
 import type { LedgerTransaction } from './lib/supabase';
+import { isInternalTransfer } from './lib/ledgerUtils';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { MasterLogin } from './components/MasterLogin';
 import { AppLock } from './components/AppLock';
@@ -150,6 +151,19 @@ export default function App() {
 
   const { cashOnHandPaisa, totalExpensesPaisa, totalInflowPaisa } = transactions.reduce((acc, t) => {
     const amount = Number(t.amount_paisa);
+    const isTransfer = isInternalTransfer(t);
+
+    if (isTransfer) {
+      if (t.payment_method === 'offline') {
+        if (t.transaction_direction === 'inflow') {
+          acc.cashOnHandPaisa += amount;
+        } else {
+          acc.cashOnHandPaisa -= amount;
+        }
+      }
+      return acc;
+    }
+
     if (t.transaction_direction === 'outflow') {
       acc.totalExpensesPaisa += amount;
       if (t.payment_method === 'offline') acc.cashOnHandPaisa -= amount;
@@ -295,11 +309,38 @@ export default function App() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    setTransactions(prev => prev.filter(tx => tx.id !== id));
+    const targetTx = transactions.find(t => t.id === id);
+    const idsToDelete = new Set<string>([id]);
+
+    if (targetTx && isInternalTransfer(targetTx)) {
+      const targetTime = new Date(targetTx.created_at || targetTx.date || targetTx.timestamp || 0).getTime();
+      const targetAmt = targetTx.amount_paisa ?? (targetTx.amount ? targetTx.amount * 100 : 0);
+      const targetDateStr = new Date(targetTx.created_at || targetTx.date || targetTx.timestamp || 0).toLocaleDateString();
+
+      // Find matching paired leg (debit/credit)
+      const pairTx = transactions.find(t =>
+        t.id !== id &&
+        isInternalTransfer(t) &&
+        (t.amount_paisa === targetAmt || (t.amount && t.amount * 100 === targetAmt)) &&
+        (
+          t.date === targetTx.date ||
+          new Date(t.created_at || t.date || t.timestamp || 0).toLocaleDateString() === targetDateStr ||
+          Math.abs(new Date(t.created_at || t.date || t.timestamp || 0).getTime() - targetTime) <= 15000
+        )
+      );
+
+      if (pairTx) {
+        idsToDelete.add(pairTx.id);
+      }
+    }
+
+    const deleteArray = Array.from(idsToDelete);
+    setTransactions(prev => prev.filter(tx => !idsToDelete.has(tx.id)));
+
     try {
-      await supabase.from('user_ledger').delete().eq('id', id);
+      await supabase.from('user_ledger').delete().in('id', deleteArray);
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      console.error('Error deleting transaction(s):', error);
     }
   };
 
